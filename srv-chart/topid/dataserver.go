@@ -29,7 +29,8 @@ func Run(opts []as.Option) {
 	conn := <-client.Discover("platform", "topidchart")
 	if conn != nil {
 		conn.Close()
-		panic("topid chart server already running, exit!")
+		fmt.Println("topid chart server already running, exit!")
+		return
 	}
 
 	server = as.NewServer(opts...).SetPublisher("platform")
@@ -39,6 +40,18 @@ func Run(opts []as.Option) {
 		fmt.Println(err)
 		return
 	}
+
+	client = as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(3)
+	conn = <-client.Discover("builtin", "IPObserver")
+	if conn == nil {
+		fmt.Println("IPObserver service not found!")
+		return
+	}
+	if err := conn.SendRecv(as.GetObservedIP{}, &cfg.ip); err != nil {
+		fmt.Println("get observed ip failed!")
+		return
+	}
+	conn.Close()
 
 	go startFileServer()
 	go startChartServer()

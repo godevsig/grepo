@@ -48,16 +48,14 @@ type SysInfo struct {
 // Return SessionResponse.
 // Client should send one or more Record after SessionResponse is received.
 type SessionRequest struct {
-	ObservedIP string
-	Tag        string
-	SysInfo    SysInfo
-	ExtraInfo  string
+	Tag       string
+	SysInfo   SysInfo
+	ExtraInfo string
 }
 
 // Handle handles SessionRequest.
 func (msg *SessionRequest) Handle(stream as.ContextStream) (reply interface{}) {
 	id := time.Now().Format("20060102") + "-" + randStringRunes(8)
-	cfg.ip = msg.ObservedIP
 	info = fmt.Sprintf("------CPUInfo------\n%s\n------KernelInfo------\n%s\n------ExtraInfo------\n%s\n", msg.SysInfo.CPUInfo, msg.SysInfo.KernelInfo, msg.ExtraInfo)
 
 	go func() {
