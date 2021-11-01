@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"runtime"
 	"strconv"
@@ -246,12 +245,10 @@ func Start(args []string) (err error) {
 			}
 		}
 
-		rhost, _, _ := net.SplitHostPort(chartConn.GetNetconn().RemoteAddr().String())
 		sessionReq := topid.SessionRequest{
-			ObservedIP: rhost,
-			Tag:        sessionTag,
-			SysInfo:    getSysInfo(),
-			ExtraInfo:  extrainfo,
+			Tag:       sessionTag,
+			SysInfo:   getSysInfo(),
+			ExtraInfo: extrainfo,
 		}
 		var sessionRep topid.SessionResponse
 		if err := chartConn.SendRecv(&sessionReq, &sessionRep); err != nil {
