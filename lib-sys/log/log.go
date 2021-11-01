@@ -43,10 +43,10 @@ type Logger struct {
 	level  Loglevel
 }
 
-// Outputter outputs the log line.
-// The (old) Outputter will be closed when closing the stream or changing
-// the stream's output destination.
-type Outputter io.WriteCloser
+// Outputter outputs log lines.
+// The old Outputter will be closed if it implements io.Closer when
+// closing the stream or changing the stream's output destination.
+type Outputter io.Writer
 
 type stdout struct{}
 
@@ -120,14 +120,11 @@ func init() {
 	RegOutputterFactory("file", fileFactory{})
 }
 
-// NewStream creates a Stream instance
+// NewStream creates a Stream instance.
+// The Stream will be anonymous if input name is empty, therefore
+// GetStream() can not find it.
 func NewStream(name string) *Stream {
-	if len(name) == 0 {
-		panic("empty name")
-	}
-
 	s := &Stream{
-		name:         name,
 		flag:         Ldefault,
 		timeFormat:   "[2006/01/02 15:04:05.000000]",
 		level:        Linfo,
@@ -135,15 +132,18 @@ func NewStream(name string) *Stream {
 		loggers:      make(map[string]*Logger),
 		outputter:    stdout{},
 	}
+	if len(name) != 0 {
+		s.name = name
+		mtx.Lock()
+		allStreams[name] = s
+		mtx.Unlock()
+	}
 
-	mtx.Lock()
-	allStreams[name] = s
-	mtx.Unlock()
 	return s
 }
 
 // GetStream returns the Stream handle if it has been created with the same input
-// "name", returns nil if not.
+// non empty "name", returns nil if not.
 // Usually used for a subpackage other than main to get the named Stream handle.
 func GetStream(name string) *Stream {
 	mtx.Lock()
@@ -162,14 +162,30 @@ func (s *Stream) Close() {
 	for _, lg := range s.loggers {
 		lg.Close()
 	}
-	s.mutex.Lock()
-	s.outputter.Close()
-	s.mutex.Unlock()
+	if closer, ok := s.outputter.(io.Closer); ok {
+		s.mutex.Lock()
+		closer.Close()
+		s.mutex.Unlock()
+	}
 
-	mtx.Lock()
-	delete(allStreams, s.name)
-	mtx.Unlock()
+	if len(s.name) != 0 {
+		mtx.Lock()
+		delete(allStreams, s.name)
+		mtx.Unlock()
+	}
+
 	*s = Stream{}
+}
+
+// SetOutputter sets the outputter for this stream.
+func (s *Stream) SetOutputter(newOutputter io.Writer) {
+	s.mutex.Lock()
+	// try to close the old one
+	if closer, ok := s.outputter.(io.Closer); ok {
+		closer.Close()
+	}
+	s.outputter = newOutputter
+	s.mutex.Unlock()
 }
 
 // SetOutput sets the output destination to the new one, and close the old one.
@@ -195,21 +211,13 @@ func (s *Stream) SetOutput(newOutputDest string) error {
 		newOutputter = otptr
 	}
 
-	// close the old one
-	s.mutex.Lock()
-	s.outputter.Close()
-	s.outputter = newOutputter
-	s.mutex.Unlock()
-
+	s.SetOutputter(newOutputter)
 	return nil
 }
 
 // SetTimeFormat can change the timestamp format, refer to standard time package for the possible formats.
 // An empty string "" will disable timestamp to be printed.
 func (s *Stream) SetTimeFormat(newFormat string) {
-	if len(s.name) == 0 {
-		panic("closed stream")
-	}
 	s.dataMutex.Lock()
 	s.timeFormat = newFormat
 	s.dataMutex.Unlock()
@@ -245,9 +253,6 @@ func patternMatch(str, pattern string) bool {
 // namePattern is a simple wildcard pattern, i.e. *foo*bar*, and supports multiple patterns,
 // i.e. "*foo,bar*,worker123", patterns are separated by a comma.
 func (s *Stream) SetLoglevel(namePattern string, newLevel Loglevel) {
-	if len(s.name) == 0 {
-		panic("closed stream")
-	}
 	patterns := strings.Split(namePattern, ",")
 	if len(patterns) == 0 {
 		return
@@ -273,9 +278,6 @@ func (s *Stream) SetLoglevel(namePattern string, newLevel Loglevel) {
 
 // AllLoggerNames returns the logger names under the stream.
 func (s *Stream) AllLoggerNames() (names []string) {
-	if len(s.name) == 0 {
-		panic("closed stream")
-	}
 	s.dataMutex.RLock()
 	defer s.dataMutex.RUnlock()
 	for name := range s.loggers {
@@ -286,9 +288,6 @@ func (s *Stream) AllLoggerNames() (names []string) {
 
 // GetLogger returns logger instance that has been created or nil if not.
 func (s *Stream) GetLogger(name string) *Logger {
-	if len(s.name) == 0 {
-		panic("closed stream")
-	}
 	if len(name) == 0 {
 		return nil
 	}
@@ -311,9 +310,6 @@ func (s *Stream) GetLogger(name string) *Logger {
 // See Stream.SetLoglevel().
 // Returns nil if stream is nil or name is empty.
 func (s *Stream) NewLogger(name string, defaultLoglevel Loglevel) *Logger {
-	if len(s.name) == 0 {
-		panic("closed stream")
-	}
 	if len(name) == 0 {
 		return nil
 	}
