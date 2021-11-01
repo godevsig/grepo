@@ -8,11 +8,84 @@ import (
 	as "github.com/godevsig/adaptiveservice"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
+// DataServer represents data server
+type DataServer struct {
+	ip     string
+	port   string
+	dir    string
+	server *as.Server
 }
 
-var server *as.Server
+var (
+	hostAddr string
+	dataDir  string
+	fs       *fileServer
+	cs       *chartServer
+)
+
+// NewServer creates a new server instance.
+func NewServer(opts []as.Option, port, dir string) *DataServer {
+	c := as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(3)
+	conn := <-c.Discover("platform", "topidchart")
+	if conn != nil {
+		conn.Close()
+		fmt.Println("topid chart server already running!")
+		return nil
+	}
+
+	s := as.NewServer(opts...).SetPublisher("platform")
+	if err := s.Publish("topidchart",
+		knownMsgs,
+	); err != nil {
+		fmt.Println(err)
+		return nil
+	}
+
+	c = as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(3)
+	conn = <-c.Discover("builtin", "IPObserver")
+	if conn == nil {
+		fmt.Println("IPObserver service not found!")
+		return nil
+	}
+	var ip string
+	if err := conn.SendRecv(as.GetObservedIP{}, &ip); err != nil {
+		fmt.Println("get observed ip failed!")
+		return nil
+	}
+	conn.Close()
+
+	hostAddr = fmt.Sprintf("%s:%s", ip, port)
+	dataDir = dir
+
+	ds := &DataServer{
+		ip:     ip,
+		port:   port,
+		dir:    dir,
+		server: s,
+	}
+
+	return ds
+}
+
+// Start runs the server.
+func (ds *DataServer) Start() {
+	fs = newFileServer(ds.dir)
+	go fs.start()
+
+	cs = newChartServer(ds.ip, ds.port, fs.port, ds.dir)
+	go cs.start()
+
+	if err := ds.server.Serve(); err != nil {
+		fmt.Println(err)
+	}
+}
+
+// Stop shutdown the server.
+func (ds *DataServer) Stop() {
+	cs.stop()
+	fs.stop()
+	ds.server.Close()
+}
 
 func randStringRunes(n int) string {
 	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
@@ -23,47 +96,6 @@ func randStringRunes(n int) string {
 	return string(b)
 }
 
-// Run runs the server.
-func Run(opts []as.Option) {
-	client := as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(3)
-	conn := <-client.Discover("platform", "topidchart")
-	if conn != nil {
-		conn.Close()
-		fmt.Println("topid chart server already running, exit!")
-		return
-	}
-
-	server = as.NewServer(opts...).SetPublisher("platform")
-	if err := server.Publish("topidchart",
-		knownMsgs,
-	); err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	client = as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(3)
-	conn = <-client.Discover("builtin", "IPObserver")
-	if conn == nil {
-		fmt.Println("IPObserver service not found!")
-		return
-	}
-	if err := conn.SendRecv(as.GetObservedIP{}, &cfg.ip); err != nil {
-		fmt.Println("get observed ip failed!")
-		return
-	}
-	conn.Close()
-
-	go startFileServer()
-	go startChartServer()
-
-	if err := server.Serve(); err != nil {
-		fmt.Println(err)
-	}
-}
-
-// Shutdown shutdown the server.
-func Shutdown() {
-	stopChartServer()
-	stopFileServer()
-	server.Close()
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }

@@ -7,6 +7,7 @@ import (
 
 	as "github.com/godevsig/adaptiveservice"
 	"github.com/godevsig/grepo/srv-chart/topid"
+	//"github.com/godevsig/grepo/lib-sys/log"
 )
 
 var (
@@ -15,6 +16,8 @@ var (
 	parsefile string
 	debug     bool
 )
+
+var server *topid.DataServer
 
 // Start starts the service
 func Start(args []string) (err error) {
@@ -43,17 +46,21 @@ func Start(args []string) (err error) {
 		opts = append(opts, as.WithLogger(as.LoggerAll{}))
 	}
 
-	topid.SetGlobalOptions(port, dir)
-	fmt.Println("topid chart starting...")
-	topid.Run(opts)
+	server := topid.NewServer(opts, port, dir)
+	if server == nil {
+		fmt.Println("create topid chart server failed!")
+		return
+	}
+	fmt.Println("topid chart server starting...")
+	server.Start()
 
 	return
 }
 
 // Stop stops the service
 func Stop() {
-	fmt.Println("topid chart stopping...")
-	topid.Shutdown()
+	fmt.Println("topid chart server stopping...")
+	server.Stop()
 }
 
 func main() {

@@ -40,14 +40,21 @@ type processRecords struct {
 	memmax map[string]float64
 }
 
-//go:embed echarts/echarts.min.js
-var echarts string
+var (
+	info string
+	//go:embed echarts/echarts.min.js
+	echarts string
+	//go:embed echarts/themes/shine.js
+	themes string
+)
 
-//go:embed echarts/themes/shine.js
-var themes string
-
-var info string
-var chartShutdown chan struct{}
+type chartServer struct {
+	ip            string
+	chartport     string
+	fileport      string
+	dir           string
+	chartShutdown chan struct{}
+}
 
 func newRecords() *processRecords {
 	return &processRecords{
@@ -410,13 +417,13 @@ func (prs *processRecords) lineMEM() *charts.Line {
 	return line
 }
 
-func lineHandler(w http.ResponseWriter, r *http.Request) {
+func (cs *chartServer) lineHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	tag := params["tag"]
 	session := "process-" + params["session"]
 
 	if tag != "" && (strings.Index(session, ".") != -1) {
-		file, err := os.Open(cfg.dir + tag + "/" + session)
+		file, err := os.Open(cs.dir + tag + "/" + session)
 		defer file.Close()
 		if err != nil {
 			http.Error(w, "File not found.", 404)
@@ -426,7 +433,7 @@ func lineHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in := fmt.Sprintf("%v/%v/%v.data", cfg.dir, tag, session)
+	in := fmt.Sprintf("%v/%v/%v.data", cs.dir, tag, session)
 
 	records := newRecords()
 	records.analysis(in)
@@ -554,13 +561,13 @@ func (prs *processRecords) pieMEM() *charts.Pie {
 	return pie
 }
 
-func pieHandler(w http.ResponseWriter, r *http.Request) {
+func (cs *chartServer) pieHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	tag := params["tag"]
 	session := "process-" + params["session"]
 
 	if tag != "" && (strings.Index(session, ".") != -1) {
-		file, err := os.Open(cfg.dir + tag + "/" + session)
+		file, err := os.Open(cs.dir + tag + "/" + session)
 		defer file.Close()
 		if err != nil {
 			http.Error(w, "File not found.", 404)
@@ -570,7 +577,7 @@ func pieHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in := fmt.Sprintf("%v/%v/%v.data", cfg.dir, tag, session)
+	in := fmt.Sprintf("%v/%v/%v.data", cs.dir, tag, session)
 
 	records := newRecords()
 	records.analysis(in)
@@ -586,16 +593,16 @@ func pieHandler(w http.ResponseWriter, r *http.Request) {
 	page.Render(w)
 }
 
-func infoHandler(w http.ResponseWriter, r *http.Request) {
+func (cs *chartServer) infoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(info))
 }
 
-func snapshotHandler(w http.ResponseWriter, r *http.Request) {
+func (cs *chartServer) snapshotHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	tag := params["tag"]
 	session := "snapshot-" + params["session"]
 
-	in := fmt.Sprintf("%v/%v/%v.data", cfg.dir, tag, session)
+	in := fmt.Sprintf("%v/%v/%v.data", cs.dir, tag, session)
 	f, err := os.Open(in)
 	if err != nil {
 		http.Error(w, "File not found.", 404)
@@ -620,7 +627,7 @@ func snapshotHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(data))
 }
 
-func updatePageTpl() {
+func (cs *chartServer) updatePageTpl() {
 	templates.BaseTpl = `
 				{{- define "base" }}
 				<div class="container">
@@ -665,36 +672,36 @@ func updatePageTpl() {
 				</body>
 				</html>
 				{{ end }}
-				`, echarts, themes, cfg.ip, cfg.fileport, cfg.ip, cfg.chartport, cfg.ip, cfg.fileport)
+				`, echarts, themes, cs.ip, cs.fileport, cs.ip, cs.chartport, cs.ip, cs.fileport)
 }
 
-//startChartServer to start http chart server
-func startChartServer() {
-	router := mux.NewRouter().StrictSlash(false)
-	router.HandleFunc("/info", infoHandler)
-	router.HandleFunc("/{tag}/{session}", lineHandler)
-	router.HandleFunc("/{tag}/{session}/pie", pieHandler)
-	router.HandleFunc("/{tag}/{session}/snapshot", snapshotHandler)
+func newChartServer(ip, chartport, fileport, dir string) *chartServer {
+	return &chartServer{
+		ip:            ip,
+		chartport:     chartport,
+		fileport:      fileport,
+		dir:           dir,
+		chartShutdown: make(chan struct{}),
+	}
+}
 
-	chartShutdown = make(chan struct{})
+func (cs *chartServer) start() {
+	router := mux.NewRouter().StrictSlash(false)
+	router.HandleFunc("/info", cs.infoHandler)
+	router.HandleFunc("/{tag}/{session}", cs.lineHandler)
+	router.HandleFunc("/{tag}/{session}/pie", cs.pieHandler)
+	router.HandleFunc("/{tag}/{session}/snapshot", cs.snapshotHandler)
+
+	cs.updatePageTpl()
+
 	idleConnsClosed := make(chan struct{})
 	srv := &http.Server{
-		Addr:    ":" + cfg.chartport,
+		Addr:    ":" + cs.chartport,
 		Handler: router,
 	}
 
 	go func() {
-		for {
-			if cfg.ip != "" {
-				updatePageTpl()
-				return
-			}
-			time.Sleep(time.Duration(2) * time.Second)
-		}
-	}()
-
-	go func() {
-		<-chartShutdown
+		<-cs.chartShutdown
 		if err := srv.Shutdown(context.Background()); err != nil {
 			log.Printf("HTTP server Shutdown: %v", err)
 		}
@@ -710,7 +717,6 @@ func startChartServer() {
 	<-idleConnsClosed
 }
 
-//stopChartServer to stop http chart server
-func stopChartServer() {
-	close(chartShutdown)
+func (cs *chartServer) stop() {
+	close(cs.chartShutdown)
 }

@@ -22,7 +22,12 @@ type fileAttr struct {
 	Ftag  string
 }
 
-var fileShutdown chan struct{}
+type fileServer struct {
+	dir          string
+	port         string
+	listener     net.Listener
+	fileShutdown chan struct{}
+}
 
 const tmplText = `
 <!doctype html>
@@ -56,12 +61,26 @@ const tmplText = `
 </html>
 `
 
-func fileIndex(w http.ResponseWriter, r *http.Request) {
+func newFileServer(dir string) *fileServer {
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		panic(err)
+	}
+
+	return &fileServer{
+		dir:          dir,
+		port:         strconv.Itoa(listener.Addr().(*net.TCPAddr).Port),
+		listener:     listener,
+		fileShutdown: make(chan struct{}),
+	}
+}
+
+func (fs *fileServer) fileIndex(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	tag := params["tag"]
 
 	if tag != "" && (strings.Index(tag, ".") != -1) || tag == "README" {
-		file, err := os.Open(cfg.dir + "/" + tag)
+		file, err := os.Open(fs.dir + "/" + tag)
 		defer file.Close()
 		if err != nil {
 			http.Error(w, "File not found.", 404)
@@ -72,7 +91,7 @@ func fileIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl := template.Must(template.New("").Parse(tmplText))
-	files, err := ioutil.ReadDir(cfg.dir + "/" + tag)
+	files, err := ioutil.ReadDir(fs.dir + "/" + tag)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
@@ -91,38 +110,30 @@ func fileIndex(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, fa)
 }
 
-func fileUpload(w http.ResponseWriter, r *http.Request) {
+func (fs *fileServer) fileUpload(w http.ResponseWriter, r *http.Request) {
 }
 
-func fileDelete(w http.ResponseWriter, r *http.Request) {
+func (fs *fileServer) fileDelete(w http.ResponseWriter, r *http.Request) {
 }
 
-//startFileServer to start http file server
-func startFileServer() {
+func (fs *fileServer) start() {
 	router := mux.NewRouter().StrictSlash(false)
-	fs := http.FileServer(http.Dir(cfg.dir))
-	router.HandleFunc("/", fileIndex)
-	router.HandleFunc("/{tag}", fileIndex)
+	handler := http.FileServer(http.Dir(fs.dir))
+	router.HandleFunc("/", fs.fileIndex)
+	router.HandleFunc("/{tag}", fs.fileIndex)
 	//router.HandleFunc("/upload", fileUpload)
 
-	router.PathPrefix("/").Handler(http.StripPrefix("/", fs))
+	router.PathPrefix("/").Handler(http.StripPrefix("/", handler))
 
-	fileShutdown = make(chan struct{})
 	idleConnsClosed := make(chan struct{})
 
-	listener, err := net.Listen("tcp", ":0")
-	if err != nil {
-		panic(err)
-	}
-	cfg.fileport = strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)
-
 	srv := &http.Server{
-		Addr:    ":" + cfg.fileport,
+		Addr:    ":" + fs.port,
 		Handler: router,
 	}
 
 	go func() {
-		<-fileShutdown
+		<-fs.fileShutdown
 		if err := srv.Shutdown(context.Background()); err != nil {
 			log.Printf("HTTP server Shutdown: %v", err)
 		}
@@ -131,14 +142,13 @@ func startFileServer() {
 
 	log.Printf("start file http server addr %s", srv.Addr)
 
-	if err := srv.Serve(listener); err != http.ErrServerClosed {
+	if err := srv.Serve(fs.listener); err != http.ErrServerClosed {
 		log.Fatalf("file http server ListenAndServe: %v", err)
 	}
 
 	<-idleConnsClosed
 }
 
-//stopFileServer to stop http file server
-func stopFileServer() {
-	close(fileShutdown)
+func (fs *fileServer) stop() {
+	close(fs.fileShutdown)
 }

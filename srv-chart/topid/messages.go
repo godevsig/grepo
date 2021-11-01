@@ -62,7 +62,7 @@ func (msg *SessionRequest) Handle(stream as.ContextStream) (reply interface{}) {
 		var buf = &Record{}
 		var pbuf = &pRecord{}
 		var sbuf = &sRecord{}
-		filepath := fmt.Sprintf("%v/%v", cfg.dir, msg.Tag)
+		filepath := fmt.Sprintf("%v/%v", dataDir, msg.Tag)
 		process := fmt.Sprintf("process-%v.data", id)
 		snapshot := fmt.Sprintf("snapshot-%v.data", id)
 		err := os.MkdirAll(filepath, 0777)
@@ -103,7 +103,7 @@ func (msg *SessionRequest) Handle(stream as.ContextStream) (reply interface{}) {
 		}
 	}()
 
-	return &SessionResponse{fmt.Sprintf("http://%v:%v/%v/%v", cfg.ip, cfg.chartport, msg.Tag, id)}
+	return &SessionResponse{fmt.Sprintf("http://%v/%v/%v", hostAddr, msg.Tag, id)}
 }
 
 // SessionResponse is the message replied by server.
