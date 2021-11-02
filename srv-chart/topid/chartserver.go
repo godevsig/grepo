@@ -306,7 +306,8 @@ func (prs *processRecords) lineCPU() *charts.Line {
 					}),
 				charts.WithLineChartOpts(
 					opts.LineChart{
-						Stack: "stack",
+						Stack:    "stack",
+						Sampling: "lttb",
 					}),
 			)
 	})
@@ -409,7 +410,8 @@ func (prs *processRecords) lineMEM() *charts.Line {
 					}),
 				charts.WithLineChartOpts(
 					opts.LineChart{
-						Stack: "stack",
+						Stack:    "stack",
+						Sampling: "lttb",
 					}),
 			)
 	})
