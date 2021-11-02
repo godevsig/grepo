@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"os"
@@ -41,7 +42,6 @@ type processRecords struct {
 }
 
 var (
-	info string
 	//go:embed echarts/echarts.min.js
 	echarts string
 	//go:embed echarts/themes/shine.js
@@ -109,7 +109,7 @@ func Parse(filename string) {
 	}
 	defer in.Close()
 
-	out, err := os.Create(strings.Replace(filename, "data", "parsed", -1))
+	out, err := os.Create(filename + ".parsed")
 	if err != nil {
 		panic(err)
 	}
@@ -604,6 +604,19 @@ func (cs *chartServer) pieHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cs *chartServer) infoHandler(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	tag := params["tag"]
+	session := "info-" + params["session"]
+
+	in := fmt.Sprintf("%v/%v/%v.data", cs.dir, tag, session)
+	f, err := os.Open(in)
+	if err != nil {
+		http.Error(w, "File not found.", 404)
+		return
+	}
+	defer f.Close()
+
+	info, _ := ioutil.ReadAll(f)
 	w.Write([]byte(info))
 }
 

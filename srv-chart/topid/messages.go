@@ -56,19 +56,26 @@ type SessionRequest struct {
 // Handle handles SessionRequest.
 func (msg *SessionRequest) Handle(stream as.ContextStream) (reply interface{}) {
 	id := time.Now().Format("20060102") + "-" + randStringRunes(8)
-	info = fmt.Sprintf("------CPUInfo------\n%s\n------KernelInfo------\n%s\n------ExtraInfo------\n%s\n", msg.SysInfo.CPUInfo, msg.SysInfo.KernelInfo, msg.ExtraInfo)
 
 	go func() {
 		var buf = &Record{}
 		var pbuf = &pRecord{}
 		var sbuf = &sRecord{}
 		filepath := fmt.Sprintf("%v/%v", dataDir, msg.Tag)
+		info := fmt.Sprintf("info-%v.data", id)
 		process := fmt.Sprintf("process-%v.data", id)
 		snapshot := fmt.Sprintf("snapshot-%v.data", id)
-		err := os.MkdirAll(filepath, 0777)
+		if err := os.MkdirAll(filepath, 0777); err != nil {
+			panic(err)
+		}
+
+		infoFile, err := os.OpenFile(path.Join(filepath, info), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 		if err != nil {
 			panic(err)
 		}
+		infoFile.WriteString(fmt.Sprintf("------CPUInfo------\n%s\n------KernelInfo------\n%s\n------ExtraInfo------\n%s\n", msg.SysInfo.CPUInfo, msg.SysInfo.KernelInfo, msg.ExtraInfo))
+		infoFile.Close()
+
 		processFile, err := os.OpenFile(path.Join(filepath, process), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 		defer processFile.Close()
 		if err != nil {
