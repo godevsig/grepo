@@ -28,13 +28,39 @@ type Loglevel uint32
 
 // All predefined loglevels
 const (
-	Ltrace Loglevel = 1
-	Ldebug Loglevel = 2
-	Linfo  Loglevel = 3
-	Lwarn  Loglevel = 4
-	Lerror Loglevel = 5
-	Lfatal Loglevel = 6
+	Linvalid Loglevel = 0
+	Ltrace   Loglevel = 1
+	Ldebug   Loglevel = 2
+	Linfo    Loglevel = 3
+	Lwarn    Loglevel = 4
+	Lerror   Loglevel = 5
+	Lfatal   Loglevel = 6
 )
+
+// loglevel2name is used to convert log levels to strings and vice versa.
+var loglevel2name = []string{"trace", "debug", "info", "warn", "error", "fatal"}
+
+// String returns the string description of the Loglevel.
+// Return "invalid" if level is out of range.
+func (level Loglevel) String() string {
+	if level >= 1 && level <= 6 {
+		return loglevel2name[level-1]
+	}
+	return "invalid"
+}
+
+// StringToLoglevel returns the loglevel described by the given string.
+// Return Linvalid if loglevelName is none of case insensitive
+// "trace", "debug", "info", "warn", "error", "fatal".
+func StringToLoglevel(loglevelName string) Loglevel {
+	loglevelName = strings.ToLower(loglevelName)
+	for i, level := range loglevel2name {
+		if level == loglevelName {
+			return Loglevel(i + 1)
+		}
+	}
+	return Linvalid
+}
 
 // Logger is the logger instance
 type Logger struct {

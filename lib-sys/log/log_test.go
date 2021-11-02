@@ -381,6 +381,15 @@ func TestFatalPrintln(t *testing.T) {
 	t.Fatal("never reach here, fatal api should panic")
 }
 
+func TestLoglevelConvert(t *testing.T) {
+	levels := []string{"trace", "debug", "info", "warn", "error", "fatal"}
+	for i, lv := range levels {
+		if StringToLoglevel(lv).String() != levels[i] {
+			t.Fatalf("string to level failed: %d, %s", i, lv)
+		}
+	}
+}
+
 func BenchmarkNullLogger(b *testing.B) {
 	testStream := NewStream("test")
 	defer testStream.Close()
