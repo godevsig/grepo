@@ -122,7 +122,7 @@ func Parse(filename string) {
 			continue
 		}
 		if len(buf.Processes) != 0 {
-			line := fmt.Sprintf(`======%v, processinfo %v\n`, time.Unix(buf.Timestamp, 0).Format("15:04:05"), buf.Processes)
+			line := fmt.Sprintf("======%v, processinfo %v\n", time.Unix(buf.Timestamp, 0).Format("15:04:05"), buf.Processes)
 			out.WriteString(line)
 		}
 	}
