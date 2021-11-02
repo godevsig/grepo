@@ -168,19 +168,12 @@ func (prs *processRecords) analysis(filename string) error {
 					name = fmt.Sprintf("%v-%v", b.Name, b.Pid)
 				}
 				if _, ok := prs.cpu[name]; !ok {
-					for i := 0; i < len(prs.time)-2; i++ {
-						prs.cpu[name] = append(prs.cpu[name], 0)
-						prs.mem[name] = append(prs.mem[name], 0)
-					}
+					reserved := make([]float64, len(prs.time)-1)
+					prs.cpu[name] = append(prs.cpu[name], reserved...)
+					prs.mem[name] = append(prs.mem[name], reserved...)
 				}
 				prs.cpu[name] = append(prs.cpu[name], floatConv(b.Ucpu+b.Scpu))
 				prs.mem[name] = append(prs.mem[name], float64(b.Mem/1024))
-			}
-			for k, v := range prs.cpu {
-				if len(v) < len(prs.time) {
-					prs.cpu[k] = append(prs.cpu[k], 0)
-					prs.mem[k] = append(prs.mem[k], 0)
-				}
 			}
 		}
 	}
@@ -191,7 +184,12 @@ func (prs *processRecords) analysis(filename string) error {
 			delete(prs.cpu, k)
 			delete(prs.cpuavg, k)
 			delete(prs.cpumax, k)
+		} else {
+			if len(v) < len(prs.time) {
+				prs.cpu[k] = append(prs.cpu[k], make([]float64, len(prs.time)-len(v))...)
+			}
 		}
+
 	}
 
 	for k, v := range prs.mem {
@@ -200,6 +198,10 @@ func (prs *processRecords) analysis(filename string) error {
 			delete(prs.mem, k)
 			delete(prs.memavg, k)
 			delete(prs.memmax, k)
+		} else {
+			if len(v) < len(prs.time) {
+				prs.mem[k] = append(prs.mem[k], make([]float64, len(prs.time)-len(v))...)
+			}
 		}
 	}
 
@@ -295,7 +297,7 @@ func (prs *processRecords) lineCPU() *charts.Line {
 			Smooth: true,
 		}))
 	prs.sortMap("cpu", prs.cpu, func(k string, v []float64) {
-		items := make([]opts.LineData, 0)
+		items := make([]opts.LineData, 0, len(prs.time))
 		for _, data := range v {
 			items = append(items, opts.LineData{Value: data})
 		}
@@ -399,7 +401,7 @@ func (prs *processRecords) lineMEM() *charts.Line {
 			Smooth: true,
 		}))
 	prs.sortMap("mem", prs.mem, func(k string, v []float64) {
-		items := make([]opts.LineData, 0)
+		items := make([]opts.LineData, 0, len(prs.time))
 		for _, data := range v {
 			items = append(items, opts.LineData{Value: data})
 		}
