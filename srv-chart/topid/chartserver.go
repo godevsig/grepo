@@ -5,7 +5,6 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"net/http"
 	"os"
@@ -20,6 +19,7 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/go-echarts/go-echarts/v2/templates"
 	"github.com/go-echarts/go-echarts/v2/types"
+	"github.com/godevsig/grepo/lib-sys/log"
 	"github.com/gorilla/mux"
 )
 
@@ -54,6 +54,7 @@ type chartServer struct {
 	fileport      string
 	dir           string
 	chartShutdown chan struct{}
+	lg            *log.Logger
 }
 
 func newRecords() *processRecords {
@@ -141,11 +142,10 @@ func (prs *processRecords) sortMap(mode string, m map[string]([]float64), f func
 	}
 }
 
-func (prs *processRecords) analysis(filename string) {
+func (prs *processRecords) analysis(filename string) error {
 	f, err := os.Open(filename)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
 	defer f.Close()
 
@@ -202,6 +202,8 @@ func (prs *processRecords) analysis(filename string) {
 			delete(prs.memmax, k)
 		}
 	}
+
+	return nil
 }
 
 func (prs *processRecords) lineCPU() *charts.Line {
@@ -438,7 +440,10 @@ func (cs *chartServer) lineHandler(w http.ResponseWriter, r *http.Request) {
 	in := fmt.Sprintf("%v/%v/%v.data", cs.dir, tag, session)
 
 	records := newRecords()
-	records.analysis(in)
+	if err := records.analysis(in); err != nil {
+		cs.lg.Errorln(err)
+		return
+	}
 
 	page := components.NewPage()
 	page.PageTitle = "Performance Analysis Tool"
@@ -582,7 +587,10 @@ func (cs *chartServer) pieHandler(w http.ResponseWriter, r *http.Request) {
 	in := fmt.Sprintf("%v/%v/%v.data", cs.dir, tag, session)
 
 	records := newRecords()
-	records.analysis(in)
+	if err := records.analysis(in); err != nil {
+		cs.lg.Errorln(err)
+		return
+	}
 
 	page := components.NewPage()
 	page.PageTitle = "Performance Analysis Tool"
@@ -677,12 +685,13 @@ func (cs *chartServer) updatePageTpl() {
 				`, echarts, themes, cs.ip, cs.fileport, cs.ip, cs.chartport, cs.ip, cs.fileport)
 }
 
-func newChartServer(ip, chartport, fileport, dir string) *chartServer {
+func newChartServer(lg *log.Logger, ip, chartport, fileport, dir string) *chartServer {
 	return &chartServer{
 		ip:            ip,
 		chartport:     chartport,
 		fileport:      fileport,
 		dir:           dir,
+		lg:            lg,
 		chartShutdown: make(chan struct{}),
 	}
 }
@@ -705,15 +714,16 @@ func (cs *chartServer) start() {
 	go func() {
 		<-cs.chartShutdown
 		if err := srv.Shutdown(context.Background()); err != nil {
-			log.Printf("HTTP server Shutdown: %v", err)
+			cs.lg.Infof("HTTP server Shutdown: %v", err)
 		}
 		close(idleConnsClosed)
 	}()
 
-	log.Printf("start chart http server addr %s", srv.Addr)
+	cs.lg.Infof("start chart http server addr %s", srv.Addr)
 
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		log.Fatalf("chart http server ListenAndServe: %v", err)
+		fs.lg.Errorf("chart http server ListenAndServe: %v", err)
+		return
 	}
 
 	<-idleConnsClosed

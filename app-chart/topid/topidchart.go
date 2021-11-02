@@ -1,20 +1,20 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
 
-	as "github.com/godevsig/adaptiveservice"
+	"github.com/godevsig/grepo/lib-sys/log"
 	"github.com/godevsig/grepo/srv-chart/topid"
-	//"github.com/godevsig/grepo/lib-sys/log"
 )
 
 var (
 	dir       string
 	port      string
 	parsefile string
-	debug     bool
+	logLevel  string
 )
 
 var server *topid.DataServer
@@ -22,39 +22,48 @@ var server *topid.DataServer
 // Start starts the service
 func Start(args []string) (err error) {
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
-	flags.SetOutput(os.Stdout)
-
-	flags.BoolVar(&debug, "debug", false, "enable debug")
-	flags.StringVar(&dir, "dir", "topidata", "directory for saving topid raw data")
-	flags.StringVar(&port, "port", "9998", "port for visiting chart http server")
+	flags.StringVar(&logLevel, "logLevel", "info", "set log level")
+	flags.StringVar(&dir, "dir", "topidata", "set directory for saving topid raw data")
+	flags.StringVar(&port, "port", "9998", "set port for visiting chart http server")
 	flags.StringVar(&parsefile, "parse", "", "parse file")
 
-	if err = flags.Parse(args); err != nil {
+	if err := flags.Parse(args); err != nil {
 		if err == flag.ErrHelp {
 			err = nil
 		}
-		return
+		return err
 	}
 
 	if len(parsefile) != 0 {
 		topid.Parse(parsefile)
-		return
+		return nil
 	}
 
-	var opts = []as.Option{as.WithScope(as.ScopeWAN)}
-	if debug {
-		opts = append(opts, as.WithLogger(as.LoggerAll{}))
+	stream := log.NewStream("")
+	defer stream.Close()
+	stream.SetOutputter(os.Stdout)
+	level := log.Linfo
+	switch logLevel {
+	case "debug":
+		level = log.Ldebug
+	case "info":
+		level = log.Linfo
+	case "warn":
+		level = log.Lwarn
+	case "error":
+		level = log.Lerror
 	}
+	lg := stream.NewLogger("topidchart", level)
+	defer lg.Close()
 
-	server := topid.NewServer(opts, port, dir)
+	server := topid.NewServer(lg, port, dir)
 	if server == nil {
-		fmt.Println("create topid chart server failed!")
-		return
+		return errors.New("create topid chart server failed")
 	}
 	fmt.Println("topid chart server starting...")
 	server.Start()
 
-	return
+	return nil
 }
 
 // Stop stops the service

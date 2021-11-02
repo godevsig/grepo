@@ -6,6 +6,7 @@ import (
 	"time"
 
 	as "github.com/godevsig/adaptiveservice"
+	"github.com/godevsig/grepo/lib-sys/log"
 )
 
 // DataServer represents data server
@@ -14,6 +15,7 @@ type DataServer struct {
 	port   string
 	dir    string
 	server *as.Server
+	lg     *log.Logger
 }
 
 var (
@@ -24,32 +26,33 @@ var (
 )
 
 // NewServer creates a new server instance.
-func NewServer(opts []as.Option, port, dir string) *DataServer {
+func NewServer(lg *log.Logger, port, dir string) *DataServer {
 	c := as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(3)
 	conn := <-c.Discover("platform", "topidchart")
 	if conn != nil {
 		conn.Close()
-		fmt.Println("topid chart server already running!")
+		lg.Errorln("topid chart server already running!")
 		return nil
 	}
 
+	var opts = []as.Option{as.WithScope(as.ScopeWAN), as.WithLogger(lg)}
 	s := as.NewServer(opts...).SetPublisher("platform")
 	if err := s.Publish("topidchart",
 		knownMsgs,
 	); err != nil {
-		fmt.Println(err)
+		lg.Errorln(err)
 		return nil
 	}
 
 	c = as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(3)
 	conn = <-c.Discover("builtin", "IPObserver")
 	if conn == nil {
-		fmt.Println("IPObserver service not found!")
+		lg.Errorln("IPObserver service not found!")
 		return nil
 	}
 	var ip string
 	if err := conn.SendRecv(as.GetObservedIP{}, &ip); err != nil {
-		fmt.Println("get observed ip failed!")
+		lg.Errorln("get observed ip failed!")
 		return nil
 	}
 	conn.Close()
@@ -62,6 +65,7 @@ func NewServer(opts []as.Option, port, dir string) *DataServer {
 		port:   port,
 		dir:    dir,
 		server: s,
+		lg:     lg,
 	}
 
 	return ds
@@ -69,14 +73,14 @@ func NewServer(opts []as.Option, port, dir string) *DataServer {
 
 // Start runs the server.
 func (ds *DataServer) Start() {
-	fs = newFileServer(ds.dir)
+	fs = newFileServer(ds.lg, ds.dir)
 	go fs.start()
 
-	cs = newChartServer(ds.ip, ds.port, fs.port, ds.dir)
+	cs = newChartServer(ds.lg, ds.ip, ds.port, fs.port, ds.dir)
 	go cs.start()
 
 	if err := ds.server.Serve(); err != nil {
-		fmt.Println(err)
+		ds.lg.Errorln(err)
 	}
 }
 

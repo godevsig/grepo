@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -13,6 +12,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/godevsig/grepo/lib-sys/log"
 	"github.com/gorilla/mux"
 )
 
@@ -27,6 +27,7 @@ type fileServer struct {
 	port         string
 	listener     net.Listener
 	fileShutdown chan struct{}
+	lg           *log.Logger
 }
 
 const tmplText = `
@@ -61,17 +62,18 @@ const tmplText = `
 </html>
 `
 
-func newFileServer(dir string) *fileServer {
+func newFileServer(lg *log.Logger, dir string) *fileServer {
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
 		panic(err)
 	}
 
 	return &fileServer{
+		lg:           lg,
 		dir:          dir,
-		port:         strconv.Itoa(listener.Addr().(*net.TCPAddr).Port),
 		listener:     listener,
 		fileShutdown: make(chan struct{}),
+		port:         strconv.Itoa(listener.Addr().(*net.TCPAddr).Port),
 	}
 }
 
@@ -135,15 +137,16 @@ func (fs *fileServer) start() {
 	go func() {
 		<-fs.fileShutdown
 		if err := srv.Shutdown(context.Background()); err != nil {
-			log.Printf("HTTP server Shutdown: %v", err)
+			fs.lg.Infof("HTTP server Shutdown: %v", err)
 		}
 		close(idleConnsClosed)
 	}()
 
-	log.Printf("start file http server addr %s", srv.Addr)
+	fs.lg.Infof("start file http server addr %s", srv.Addr)
 
 	if err := srv.Serve(fs.listener); err != http.ErrServerClosed {
-		log.Fatalf("file http server ListenAndServe: %v", err)
+		fs.lg.Errorf("file http server ListenAndServe: %v", err)
+		return
 	}
 
 	<-idleConnsClosed
