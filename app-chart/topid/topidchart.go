@@ -15,6 +15,7 @@ var server *topid.DataServer
 // Start starts the service
 func Start(args []string) (err error) {
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
+	flags.SetOutput(os.Stdout)
 	logLevel := flags.String("logLevel", "info", "set log level")
 	dir := flags.String("dir", "topidata", "set directory for saving topid raw data")
 	port := flags.String("port", "9998", "set port for visiting chart http server")
