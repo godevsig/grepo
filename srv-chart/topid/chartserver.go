@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"os"
 	"sort"
@@ -65,6 +66,10 @@ func newRecords() *processRecords {
 		cpumax: make(map[string]uint64),
 		memmax: make(map[string]uint64),
 	}
+}
+
+func floatConv(value float64) float64 {
+	return math.Round(value*100) / 100
 }
 
 func maxAndAvg(series []uint64) (max, avg uint64) {
@@ -401,7 +406,7 @@ func (prs *processRecords) lineMEM() *charts.Line {
 	prs.sortMap("mem", prs.mem, func(k string, v []uint64) {
 		items := make([]opts.LineData, 0, len(prs.time))
 		for _, data := range v {
-			items = append(items, opts.LineData{Value: float64(data) / 1024})
+			items = append(items, opts.LineData{Value: floatConv(float64(data) / 1024)})
 		}
 
 		line.AddSeries(k, items).
