@@ -38,7 +38,7 @@ func Start(args []string) (err error) {
 	lg := stream.NewLogger("topidchart", log.StringToLoglevel(*logLevel))
 
 	fmt.Println("topid chart server starting...")
-	server := topid.NewServer(lg, *port, *dir)
+	server = topid.NewServer(lg, *port, *dir)
 	if server == nil {
 		return errors.New("create topid chart server failed")
 	}

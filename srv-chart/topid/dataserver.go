@@ -88,6 +88,7 @@ func (ds *DataServer) Start() {
 func (ds *DataServer) Stop() {
 	cs.stop()
 	fs.stop()
+	time.Sleep(time.Duration(1) * time.Second)
 	ds.server.Close()
 }
 

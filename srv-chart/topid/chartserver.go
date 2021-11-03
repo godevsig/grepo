@@ -240,9 +240,10 @@ func (prs *processRecords) lineCPU() *charts.Line {
 		}),
 	)
 
-	fn := fmt.Sprintf(`for(var key in option_%s.series){
-						if(option_%s.series[key].name.indexOf("[") == -1){
-							obj[option_%s.series[key].name] = true;
+	fn := fmt.Sprintf(`var obj = {};
+					for(var key in option_%s.series){
+						if(option_%s.series[key].name.indexOf("[") != -1){
+							obj[option_%s.series[key].name] = false;
 						}
 					}
 					option_%s.legend.selected = obj;
@@ -361,9 +362,10 @@ func (prs *processRecords) lineMEM() *charts.Line {
 		}),
 	)
 
-	fn := fmt.Sprintf(`for(var key in option_%s.series){
-						if(option_%s.series[key].name.indexOf("[") == -1){
-							obj[option_%s.series[key].name] = true;
+	fn := fmt.Sprintf(`var obj = {};
+					for(var key in option_%s.series){
+						if(option_%s.series[key].name.indexOf("[") != -1){
+							obj[option_%s.series[key].name] = false;
 						}
 					}
 					option_%s.legend.selected = obj;
@@ -748,18 +750,18 @@ func (cs *chartServer) start() {
 		if err := srv.Shutdown(context.Background()); err != nil {
 			cs.lg.Errorf("chart http server shutdown: %v", err)
 		}
+		cs.lg.Infoln("chart http server shutdown successfully")
 		close(idleConnsClosed)
 	}()
 
 	cs.lg.Infof("start chart http server addr %s", srv.Addr)
 
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		fs.lg.Errorf("chart http server ListenAndServe: %v", err)
+		cs.lg.Errorf("chart http server ListenAndServe: %v", err)
 		return
 	}
 
 	<-idleConnsClosed
-	cs.lg.Infoln("chart http server shutdown successfully")
 }
 
 func (cs *chartServer) stop() {
