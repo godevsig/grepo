@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math"
 	"net/http"
 	"os"
 	"sort"
@@ -26,19 +25,19 @@ import (
 
 type pair struct {
 	key   string
-	value float64
+	value uint64
 }
 
 type list []pair
 
 type processRecords struct {
 	time   []string
-	cpu    map[string]([]float64)
-	mem    map[string]([]float64)
-	cpuavg map[string]float64
-	memavg map[string]float64
-	cpumax map[string]float64
-	memmax map[string]float64
+	cpu    map[string]([]uint64)
+	mem    map[string]([]uint64)
+	cpuavg map[string]uint64
+	memavg map[string]uint64
+	cpumax map[string]uint64
+	memmax map[string]uint64
 }
 
 var (
@@ -59,29 +58,25 @@ type chartServer struct {
 
 func newRecords() *processRecords {
 	return &processRecords{
-		cpu:    make(map[string]([]float64)),
-		mem:    make(map[string]([]float64)),
-		cpuavg: make(map[string]float64),
-		memavg: make(map[string]float64),
-		cpumax: make(map[string]float64),
-		memmax: make(map[string]float64),
+		cpu:    make(map[string]([]uint64)),
+		mem:    make(map[string]([]uint64)),
+		cpuavg: make(map[string]uint64),
+		memavg: make(map[string]uint64),
+		cpumax: make(map[string]uint64),
+		memmax: make(map[string]uint64),
 	}
 }
 
-func floatConv(value float64) float64 {
-	return math.Round(value*100) / 100
-}
-
-func maxAndAvg(series []float64) (max, avg float64) {
+func maxAndAvg(series []uint64) (max, avg uint64) {
 	if len := len(series); len != 0 {
-		sum := 0.0
+		var sum uint64 = 0
 		for _, v := range series {
 			if v > max {
 				max = v
 			}
 			sum += v
 		}
-		avg = sum / float64(len)
+		avg = uint64(int(sum) / len)
 	}
 	return
 }
@@ -90,7 +85,7 @@ func (p list) Len() int           { return len(p) }
 func (p list) Less(i, j int) bool { return p[i].value < p[j].value }
 func (p list) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
-func rank(avg map[string]float64) list {
+func rank(avg map[string]uint64) list {
 	l := make(list, len(avg))
 	i := 0
 	for k, v := range avg {
@@ -128,7 +123,7 @@ func Parse(filename string) {
 	}
 }
 
-func (prs *processRecords) sortMap(mode string, m map[string]([]float64), f func(k string, v []float64)) {
+func (prs *processRecords) sortMap(mode string, m map[string]([]uint64), f func(k string, v []uint64)) {
 	l := make(list, len(prs.cpuavg))
 	switch mode {
 	case "cpu":
@@ -168,25 +163,25 @@ func (prs *processRecords) analysis(filename string) error {
 					name = fmt.Sprintf("%v-%v", b.Name, b.Pid)
 				}
 				if _, ok := prs.cpu[name]; !ok {
-					reserved := make([]float64, len(prs.time)-1)
+					reserved := make([]uint64, len(prs.time)-1)
 					prs.cpu[name] = append(prs.cpu[name], reserved...)
 					prs.mem[name] = append(prs.mem[name], reserved...)
 				}
-				prs.cpu[name] = append(prs.cpu[name], floatConv(b.Ucpu+b.Scpu))
-				prs.mem[name] = append(prs.mem[name], float64(b.Mem/1024))
+				prs.cpu[name] = append(prs.cpu[name], b.Ucpu+b.Scpu)
+				prs.mem[name] = append(prs.mem[name], b.Mem)
 			}
 		}
 	}
 
 	for k, v := range prs.cpu {
 		prs.cpumax[k], prs.cpuavg[k] = maxAndAvg(v)
-		if prs.cpuavg[k] <= 0.5 && prs.cpumax[k] <= 5 {
+		if prs.cpuavg[k] <= (0.5*100) && prs.cpumax[k] <= (5*100) {
 			delete(prs.cpu, k)
 			delete(prs.cpuavg, k)
 			delete(prs.cpumax, k)
 		} else {
 			if len(v) < len(prs.time) {
-				prs.cpu[k] = append(prs.cpu[k], make([]float64, len(prs.time)-len(v))...)
+				prs.cpu[k] = append(prs.cpu[k], make([]uint64, len(prs.time)-len(v))...)
 			}
 		}
 
@@ -194,13 +189,13 @@ func (prs *processRecords) analysis(filename string) error {
 
 	for k, v := range prs.mem {
 		prs.memmax[k], prs.memavg[k] = maxAndAvg(v)
-		if prs.memavg[k] <= 1 && prs.memmax[k] <= 10 {
+		if prs.memavg[k] <= 1024 && prs.memmax[k] <= (10*1024) {
 			delete(prs.mem, k)
 			delete(prs.memavg, k)
 			delete(prs.memmax, k)
 		} else {
 			if len(v) < len(prs.time) {
-				prs.mem[k] = append(prs.mem[k], make([]float64, len(prs.time)-len(v))...)
+				prs.mem[k] = append(prs.mem[k], make([]uint64, len(prs.time)-len(v))...)
 			}
 		}
 	}
@@ -242,6 +237,9 @@ func (prs *processRecords) lineCPU() *charts.Line {
 
 	fn := fmt.Sprintf(`document.getElementById("snapshot").onclick=function(){
 						location.href=location.href+"/snapshot";
+					};
+					document.getElementById("info").onclick=function(){
+						location.href=location.href+"/info";
 					};
 					document.getElementById("pieview").onclick=function(){
 						this.value="PIEVIEW";
@@ -296,10 +294,10 @@ func (prs *processRecords) lineCPU() *charts.Line {
 		charts.WithLineChartOpts(opts.LineChart{
 			Smooth: true,
 		}))
-	prs.sortMap("cpu", prs.cpu, func(k string, v []float64) {
+	prs.sortMap("cpu", prs.cpu, func(k string, v []uint64) {
 		items := make([]opts.LineData, 0, len(prs.time))
 		for _, data := range v {
-			items = append(items, opts.LineData{Value: data})
+			items = append(items, opts.LineData{Value: float64(data) / 100})
 		}
 
 		line.AddSeries(k, items).
@@ -400,10 +398,10 @@ func (prs *processRecords) lineMEM() *charts.Line {
 		charts.WithLineChartOpts(opts.LineChart{
 			Smooth: true,
 		}))
-	prs.sortMap("mem", prs.mem, func(k string, v []float64) {
+	prs.sortMap("mem", prs.mem, func(k string, v []uint64) {
 		items := make([]opts.LineData, 0, len(prs.time))
 		for _, data := range v {
-			items = append(items, opts.LineData{Value: data})
+			items = append(items, opts.LineData{Value: float64(data) / 1024})
 		}
 
 		line.AddSeries(k, items).
@@ -683,10 +681,10 @@ func (cs *chartServer) updatePageTpl() {
 				<style> .btn { justify-content:space-around; padding-left:50px; float:left; width:150px } </style>
 				<div class="btn">
 					<a href="http://%s:%s/README"><input type="button" style="width:100px;height:30px;border:5px orange double;margin-top:10px" value="README"/></a>
-					<a href="http://%s:%s/info"><input type="button" style="width:100px;height:30px;border:5px orange double;margin-top:10px" value="INFO"/></a>
 					<a href="http://%s:%s"><input type="button" style="width:100px;height:30px;border:5px orange double;margin-top:10px" value="HISTORY"/></a>
-					<input id="pieview" type="button" style="width:100px;height:30px;border:5px blue double;margin-top:10px"value="PIEVIEW"/>
+					<input id="info" type="button" style="width:100px;height:30px;border:5px blue double;margin-top:10px"value="INFO"/>
 					<input id="snapshot" type="button" style="width:100px;height:30px;border:5px blue double;margin-top:10px"value="SNAPSHOT"/>
+					<input id="pieview" type="button" style="width:100px;height:30px;border:5px blue double;margin-top:10px"value="PIEVIEW"/>
 					<input id="cpuselectall" type="button" style="width:100px;height:30px;border:5px blue double;margin-top:10px"value="CPUOFF" flag="1"/>
 					<input id="memselectall" type="button" style="width:100px;height:30px;border:5px blue double;margin-top:10px"value="MEMOFF" flag="1"/>
 					<input id="syscpu" type="button" style="width:100px;height:30px;border:5px blue double;margin-top:10px"value="SYSCPU" flag="1"/>
@@ -697,7 +695,7 @@ func (cs *chartServer) updatePageTpl() {
 				</body>
 				</html>
 				{{ end }}
-				`, echarts, themes, cs.ip, cs.fileport, cs.ip, cs.chartport, cs.ip, cs.fileport)
+				`, echarts, themes, cs.ip, cs.fileport, cs.ip, cs.chartport)
 }
 
 func newChartServer(lg *log.Logger, ip, chartport, fileport, dir string) *chartServer {
@@ -713,8 +711,8 @@ func newChartServer(lg *log.Logger, ip, chartport, fileport, dir string) *chartS
 
 func (cs *chartServer) start() {
 	router := mux.NewRouter().StrictSlash(false)
-	router.HandleFunc("/info", cs.infoHandler)
 	router.HandleFunc("/{tag}/{session}", cs.lineHandler)
+	router.HandleFunc("/{tag}/{session}/info", cs.infoHandler)
 	router.HandleFunc("/{tag}/{session}/pie", cs.pieHandler)
 	router.HandleFunc("/{tag}/{session}/snapshot", cs.snapshotHandler)
 

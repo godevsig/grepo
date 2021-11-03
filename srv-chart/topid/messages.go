@@ -25,8 +25,8 @@ type sRecord struct {
 type ProcessInfo struct {
 	Pid  int
 	Name string
-	Ucpu float64
-	Scpu float64
+	Ucpu uint64
+	Scpu uint64
 	Mem  uint64
 }
 
