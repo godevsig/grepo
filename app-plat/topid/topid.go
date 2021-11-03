@@ -371,7 +371,7 @@ func Start(args []string) (err error) {
 					if sys {
 						for k, v := range sysCPU {
 							procinfo.Name = k
-							procinfo.Scpu = v
+							procinfo.Scpu = uint64(v * 100)
 							pspayload = append(pspayload, procinfo)
 						}
 					}
@@ -399,8 +399,8 @@ func Start(args []string) (err error) {
 					procInfo := topid.ProcessInfo{
 						Pid:  pstat.Pid,
 						Name: pstat.Name,
-						Ucpu: pstat.Ucpu,
-						Scpu: pstat.Scpu,
+						Ucpu: uint64(pstat.Ucpu * 100),
+						Scpu: uint64(pstat.Scpu * 100),
 						Mem:  pstat.Mem,
 					}
 					pspayload = append(pspayload, procInfo)

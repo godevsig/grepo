@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -378,7 +377,7 @@ func (cti *cpuTickInfo) update() error {
 		&cti.steal,
 		&cti.guest,
 		&cti.guestnice); err == nil {
-		cti.totalTick = cti.user + cti.nice + cti.system + cti.idle + cti.iowait + cti.irq + cti.softirq + cti.steal + cti.guest + cti.guestnice
+		cti.totalTick = cti.user + cti.nice + cti.system + cti.idle + cti.irq + cti.softirq + cti.steal + cti.guest + cti.guestnice
 	} else {
 		return ef.ErrorHere(err)
 	}
@@ -408,7 +407,7 @@ func (cti *cpuTickInfo) update() error {
 				&ct.steal,
 				&ct.guest,
 				&ct.guestnice); err == nil {
-				ct.totalTick = ct.user + ct.nice + ct.system + ct.idle + ct.iowait + ct.irq + ct.softirq + ct.steal + ct.guest + ct.guestnice
+				ct.totalTick = ct.user + ct.nice + ct.system + ct.idle + ct.irq + ct.softirq + ct.steal + ct.guest + ct.guestnice
 			} else {
 				return ef.ErrorHere(err)
 			}
@@ -570,7 +569,7 @@ func (ti *TidInfo) CPUpercent() (float64, float64) {
 	sdiff := float64(ti.tickCurr.sTick-ti.tickLast.sTick) * 100
 	hz := ef.AtomicLoadFloat64(&userHz)
 	sysdiff := ti.timeCurr.Sub(ti.timeLast).Seconds() * hz
-	return math.Round(udiff/sysdiff*100) / 100, math.Round(sdiff/sysdiff*100) / 100
+	return udiff / sysdiff, sdiff / sysdiff
 }
 
 // Comm returns pid's name
@@ -803,7 +802,7 @@ func (mi *memInfo) update() error {
 	return nil
 }
 
-// GetMemInfo returns a slice of map[string]uint64, representing system memory info
+// GetMemInfo returns a slice of map[string]uint64, representing system memory info in KB.
 func (si *SysInfo) GetMemInfo() (map[string]uint64, error) {
 	mem := make(map[string]uint64)
 	mem["[available]"] = si.mem.available
@@ -856,7 +855,11 @@ func (si *SysInfo) SysPercent() ([]map[string]float64, error) {
 		sys[prefix+"nice]"] = float64(currCt.nice-lastCt.nice) * 100 / sysdiff
 		sys[prefix+"system]"] = float64(currCt.system-lastCt.system) * 100 / sysdiff
 		sys[prefix+"idle]"] = float64(currCt.idle-lastCt.idle) * 100 / sysdiff
-		sys[prefix+"iowait]"] = float64(currCt.iowait-lastCt.iowait) * 100 / sysdiff
+		iowaitTick := 0.0
+		if diff := currCt.iowait - lastCt.iowait; diff > 0 {
+			iowaitTick = float64(diff)
+		}
+		sys[prefix+"iowait]"] = iowaitTick * 100 / sysdiff
 		sys[prefix+"irq]"] = float64(currCt.irq-lastCt.irq) * 100 / sysdiff
 		sys[prefix+"softirq]"] = float64(currCt.softirq-lastCt.softirq) * 100 / sysdiff
 		sys[prefix+"steal]"] = float64(currCt.steal-lastCt.steal) * 100 / sysdiff
@@ -872,7 +875,7 @@ func (si *SysInfo) SysPercent() ([]map[string]float64, error) {
 // SysPercentBy returns the CPU statistics specified by core and name:
 // core is the core number, -1 means all; name can be one of
 // user, nice, system, idle, iowait, irq, softirq, steal, guest or guestnice.
-// Return -1 if the name is not in above list.
+// Return 0 if the name is not in above list.
 // Panic if core is out of range.
 func (si *SysInfo) SysPercentBy(core int, name string) float64 {
 	var ctCurr, ctLast *cpuTick
@@ -907,7 +910,7 @@ func (si *SysInfo) SysPercentBy(core int, name string) float64 {
 	case "guestnice":
 		return float64(ctCurr.guestnice-ctLast.guestnice) * 100 / tickDiff
 	default:
-		return -1
+		return 0
 	}
 }
 
@@ -1074,7 +1077,7 @@ type ProcessStat struct {
 	Name string
 	Ucpu float64
 	Scpu float64
-	Mem  uint64
+	Mem  uint64 // in KB
 }
 
 // ProcessStatAll returns the statistics of the pid and all its children/threads
