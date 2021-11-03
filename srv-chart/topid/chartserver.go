@@ -240,7 +240,14 @@ func (prs *processRecords) lineCPU() *charts.Line {
 		}),
 	)
 
-	fn := fmt.Sprintf(`document.getElementById("snapshot").onclick=function(){
+	fn := fmt.Sprintf(`for(var key in option_%s.series){
+						if(option_%s.series[key].name.indexOf("[") == -1){
+							obj[option_%s.series[key].name] = true;
+						}
+					}
+					option_%s.legend.selected = obj;
+					goecharts_%s.setOption(option_%s);
+					document.getElementById("snapshot").onclick=function(){
 						location.href=location.href+"/snapshot";
 					};
 					document.getElementById("info").onclick=function(){
@@ -291,7 +298,7 @@ func (prs *processRecords) lineCPU() *charts.Line {
 						}
 						option_%s.legend.selected = obj;
 						goecharts_%s.setOption(option_%s);
-					};`, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID)
+					};`, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID)
 	line.AddJSFuncs(fn)
 
 	line = line.SetXAxis(prs.time)
@@ -354,7 +361,14 @@ func (prs *processRecords) lineMEM() *charts.Line {
 		}),
 	)
 
-	fn := fmt.Sprintf(`document.getElementById("memselectall").onclick=function(){
+	fn := fmt.Sprintf(`for(var key in option_%s.series){
+						if(option_%s.series[key].name.indexOf("[") == -1){
+							obj[option_%s.series[key].name] = true;
+						}
+					}
+					option_%s.legend.selected = obj;
+					goecharts_%s.setOption(option_%s);
+					document.getElementById("memselectall").onclick=function(){
 						var flag=this.getAttribute("flag");
 						var val=false;
 						if(flag==1){
@@ -395,7 +409,7 @@ func (prs *processRecords) lineMEM() *charts.Line {
 						}
 						option_%s.legend.selected = obj;
 						goecharts_%s.setOption(option_%s);
-					};`, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID)
+					};`, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID, line.ChartID)
 	line.AddJSFuncs(fn)
 
 	line = line.SetXAxis(prs.time)
@@ -732,7 +746,7 @@ func (cs *chartServer) start() {
 	go func() {
 		<-cs.chartShutdown
 		if err := srv.Shutdown(context.Background()); err != nil {
-			cs.lg.Infof("HTTP server Shutdown: %v", err)
+			cs.lg.Errorf("chart http server shutdown: %v", err)
 		}
 		close(idleConnsClosed)
 	}()
@@ -745,6 +759,7 @@ func (cs *chartServer) start() {
 	}
 
 	<-idleConnsClosed
+	cs.lg.Infoln("chart http server shutdown successfully")
 }
 
 func (cs *chartServer) stop() {

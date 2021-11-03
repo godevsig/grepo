@@ -137,7 +137,7 @@ func (fs *fileServer) start() {
 	go func() {
 		<-fs.fileShutdown
 		if err := srv.Shutdown(context.Background()); err != nil {
-			fs.lg.Infof("HTTP server Shutdown: %v", err)
+			fs.lg.Errorf("file http server shutdown: %v", err)
 		}
 		close(idleConnsClosed)
 	}()
@@ -150,6 +150,7 @@ func (fs *fileServer) start() {
 	}
 
 	<-idleConnsClosed
+	fs.lg.Infoln("file http server shutdown successfully")
 }
 
 func (fs *fileServer) stop() {
