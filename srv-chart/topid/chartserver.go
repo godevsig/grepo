@@ -196,7 +196,7 @@ func (prs *processRecords) analysis(filename string) error {
 
 	for k, v := range prs.mem {
 		prs.memmax[k], prs.memavg[k] = maxAndAvg(v)
-		if prs.memavg[k] <= 1024 && prs.memmax[k] <= (10*1024) {
+		if prs.memavg[k] <= (1*1024) && prs.memmax[k] <= (10*1024) {
 			delete(prs.mem, k)
 			delete(prs.memavg, k)
 			delete(prs.memmax, k)
@@ -305,29 +305,25 @@ func (prs *processRecords) lineCPU() *charts.Line {
 	line.AddJSFuncs(fn)
 
 	line = line.SetXAxis(prs.time)
-	line.SetSeriesOptions(
-		charts.WithLineChartOpts(opts.LineChart{
-			Smooth: true,
-		}))
 	prs.sortMap("cpu", prs.cpu, func(k string, v []uint64) {
 		items := make([]opts.LineData, 0, len(prs.time))
 		for _, data := range v {
 			items = append(items, opts.LineData{Value: float64(data) / 100})
 		}
 
-		line.AddSeries(k, items).
-			SetSeriesOptions(
-				charts.WithAreaStyleOpts(
-					opts.AreaStyle{
-						Opacity: 0.8,
-					}),
-				charts.WithLineChartOpts(
-					opts.LineChart{
-						Stack:    "stack",
-						Sampling: "lttb",
-					}),
-			)
+		line.AddSeries(k, items)
 	})
+	line.SetSeriesOptions(
+		charts.WithAreaStyleOpts(
+			opts.AreaStyle{
+				Opacity: 0.8,
+			}),
+		charts.WithLineChartOpts(
+			opts.LineChart{
+				Stack:    "stack",
+				Sampling: "lttb",
+			}),
+	)
 
 	return line
 }
@@ -417,29 +413,25 @@ func (prs *processRecords) lineMEM() *charts.Line {
 	line.AddJSFuncs(fn)
 
 	line = line.SetXAxis(prs.time)
-	line.SetSeriesOptions(
-		charts.WithLineChartOpts(opts.LineChart{
-			Smooth: true,
-		}))
 	prs.sortMap("mem", prs.mem, func(k string, v []uint64) {
 		items := make([]opts.LineData, 0, len(prs.time))
 		for _, data := range v {
 			items = append(items, opts.LineData{Value: floatConv(float64(data) / 1024)})
 		}
 
-		line.AddSeries(k, items).
-			SetSeriesOptions(
-				charts.WithAreaStyleOpts(
-					opts.AreaStyle{
-						Opacity: 0.8,
-					}),
-				charts.WithLineChartOpts(
-					opts.LineChart{
-						Stack:    "stack",
-						Sampling: "lttb",
-					}),
-			)
+		line.AddSeries(k, items)
 	})
+	line.SetSeriesOptions(
+		charts.WithAreaStyleOpts(
+			opts.AreaStyle{
+				Opacity: 0.8,
+			}),
+		charts.WithLineChartOpts(
+			opts.LineChart{
+				Stack:    "stack",
+				Sampling: "lttb",
+			}),
+	)
 
 	return line
 }
