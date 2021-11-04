@@ -6,17 +6,19 @@ import (
 	"fmt"
 	"os"
 
+	as "github.com/godevsig/adaptiveservice"
 	"github.com/godevsig/grepo/lib-sys/log"
 	"github.com/godevsig/grepo/srv-chart/topid"
 )
 
-var server *topid.DataServer
+var server *topid.Server
 
-// Start starts the service
+// Start starts the app
 func Start(args []string) (err error) {
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.SetOutput(os.Stdout)
-	logLevel := flags.String("logLevel", "info", "set log level")
+
+	logLevel := flags.String("logLevel", "info", "debug/info/warn/error")
 	dir := flags.String("dir", "topidata", "set directory for saving topid raw data")
 	port := flags.String("port", "9998", "set port for visiting chart http server")
 	parsefile := flags.String("parse", "", "parse file")
@@ -29,13 +31,20 @@ func Start(args []string) (err error) {
 	}
 
 	if len(*parsefile) != 0 {
-		topid.Parse(*parsefile)
-		return nil
+		return topid.ParseFile(*parsefile)
 	}
 
 	stream := log.NewStream("")
 	stream.SetOutputter(os.Stdout)
 	lg := stream.NewLogger("topidchart", log.StringToLoglevel(*logLevel))
+
+	c := as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(3)
+	conn := <-c.Discover("platform", "topidchart")
+	if conn != nil {
+		conn.Close()
+		lg.Warnln("topid chart server already running")
+		return nil
+	}
 
 	fmt.Println("topid chart server starting...")
 	server = topid.NewServer(lg, *port, *dir)
@@ -43,15 +52,13 @@ func Start(args []string) (err error) {
 		return errors.New("create topid chart server failed")
 	}
 
-	server.Start()
-
-	return nil
+	return server.Run()
 }
 
-// Stop stops the service
+// Stop stops the app
 func Stop() {
 	fmt.Println("topid chart server stopping...")
-	server.Stop()
+	server.Close()
 }
 
 func main() {

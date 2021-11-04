@@ -23,11 +23,11 @@ type fileAttr struct {
 }
 
 type fileServer struct {
-	dir          string
-	port         string
-	listener     net.Listener
-	fileShutdown chan struct{}
-	lg           *log.Logger
+	dir      string
+	port     string
+	listener net.Listener
+	lg       *log.Logger
+	srv      *http.Server
 }
 
 const tmplText = `
@@ -65,16 +65,30 @@ const tmplText = `
 func newFileServer(lg *log.Logger, dir string) *fileServer {
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
-		panic(err)
+		lg.Errorf("file server listen failed: %v", err)
+		return nil
 	}
 
-	return &fileServer{
-		lg:           lg,
-		dir:          dir,
-		listener:     listener,
-		fileShutdown: make(chan struct{}),
-		port:         strconv.Itoa(listener.Addr().(*net.TCPAddr).Port),
+	fs := &fileServer{
+		lg:       lg,
+		dir:      dir,
+		listener: listener,
+		port:     strconv.Itoa(listener.Addr().(*net.TCPAddr).Port),
 	}
+
+	router := mux.NewRouter().StrictSlash(false)
+	handler := http.FileServer(http.Dir(fs.dir))
+	router.HandleFunc("/", fs.fileIndex)
+	router.HandleFunc("/{tag}", fs.fileIndex)
+	//router.HandleFunc("/upload", fileUpload)
+
+	router.PathPrefix("/").Handler(http.StripPrefix("/", handler))
+
+	fs.srv = &http.Server{
+		Addr:    ":" + fs.port,
+		Handler: router,
+	}
+	return fs
 }
 
 func (fs *fileServer) fileIndex(w http.ResponseWriter, r *http.Request) {
@@ -119,40 +133,17 @@ func (fs *fileServer) fileDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (fs *fileServer) start() {
-	router := mux.NewRouter().StrictSlash(false)
-	handler := http.FileServer(http.Dir(fs.dir))
-	router.HandleFunc("/", fs.fileIndex)
-	router.HandleFunc("/{tag}", fs.fileIndex)
-	//router.HandleFunc("/upload", fileUpload)
+	fs.lg.Infof("start file http server addr %s", fs.srv.Addr)
 
-	router.PathPrefix("/").Handler(http.StripPrefix("/", handler))
-
-	idleConnsClosed := make(chan struct{})
-
-	srv := &http.Server{
-		Addr:    ":" + fs.port,
-		Handler: router,
-	}
-
-	go func() {
-		<-fs.fileShutdown
-		if err := srv.Shutdown(context.Background()); err != nil {
-			fs.lg.Errorf("file http server shutdown: %v", err)
-		}
-		fs.lg.Infoln("file http server shutdown successfully")
-		close(idleConnsClosed)
-	}()
-
-	fs.lg.Infof("start file http server addr %s", srv.Addr)
-
-	if err := srv.Serve(fs.listener); err != http.ErrServerClosed {
+	if err := fs.srv.Serve(fs.listener); err != http.ErrServerClosed {
 		fs.lg.Errorf("file http server ListenAndServe: %v", err)
 		return
 	}
-
-	<-idleConnsClosed
 }
 
 func (fs *fileServer) stop() {
-	close(fs.fileShutdown)
+	if err := fs.srv.Shutdown(context.Background()); err != nil {
+		fs.lg.Errorf("file http server shutdown failed: %v", err)
+	}
+	fs.lg.Infoln("file http server shutdown successfully")
 }

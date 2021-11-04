@@ -9,6 +9,7 @@ import (
 	"time"
 
 	as "github.com/godevsig/adaptiveservice"
+	"github.com/godevsig/grepo/lib-sys/log"
 )
 
 type pRecord struct {
@@ -25,9 +26,9 @@ type sRecord struct {
 type ProcessInfo struct {
 	Pid  int
 	Name string
-	Ucpu uint64
-	Scpu uint64
-	Mem  uint64
+	Ucpu uint64 // 1234 means 12.34% per single core
+	Scpu uint64 // 1234 means 12.34% per single core
+	Mem  uint64 // in KB
 }
 
 // Record is sent by client periodically including target processes info,
@@ -55,57 +56,52 @@ type SessionRequest struct {
 
 // Handle handles SessionRequest.
 func (msg *SessionRequest) Handle(stream as.ContextStream) (reply interface{}) {
+	lg := stream.GetContext().(*log.Logger)
 	id := time.Now().Format("20060102") + "-" + randStringRunes(8)
 
+	filepath := fmt.Sprintf("%v/%v", dataDir, msg.Tag)
+	info := fmt.Sprintf("info-%v.data", id)
+	process := fmt.Sprintf("process-%v.data", id)
+	snapshot := fmt.Sprintf("snapshot-%v.data", id)
+	if err := os.MkdirAll(filepath, 0777); err != nil {
+		return err
+	}
+
+	infoFile, err := os.OpenFile(path.Join(filepath, info), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+	infoFile.WriteString(fmt.Sprintf("------CPUInfo------\n%s\n------KernelInfo------\n%s\n------ExtraInfo------\n%s\n", msg.SysInfo.CPUInfo, msg.SysInfo.KernelInfo, msg.ExtraInfo))
+	infoFile.Close()
+
+	processFile, err := os.OpenFile(path.Join(filepath, process), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+	snapshotFile, err := os.OpenFile(path.Join(filepath, snapshot), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+	pEnc := gob.NewEncoder(processFile)
+	sEnc := gob.NewEncoder(snapshotFile)
+
 	go func() {
-		var buf = &Record{}
-		var pbuf = &pRecord{}
-		var sbuf = &sRecord{}
-		filepath := fmt.Sprintf("%v/%v", dataDir, msg.Tag)
-		info := fmt.Sprintf("info-%v.data", id)
-		process := fmt.Sprintf("process-%v.data", id)
-		snapshot := fmt.Sprintf("snapshot-%v.data", id)
-		if err := os.MkdirAll(filepath, 0777); err != nil {
-			panic(err)
-		}
-
-		infoFile, err := os.OpenFile(path.Join(filepath, info), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
-		if err != nil {
-			panic(err)
-		}
-		infoFile.WriteString(fmt.Sprintf("------CPUInfo------\n%s\n------KernelInfo------\n%s\n------ExtraInfo------\n%s\n", msg.SysInfo.CPUInfo, msg.SysInfo.KernelInfo, msg.ExtraInfo))
-		infoFile.Close()
-
-		processFile, err := os.OpenFile(path.Join(filepath, process), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
-		defer processFile.Close()
-		if err != nil {
-			panic(err)
-		}
-		snapshotFile, err := os.OpenFile(path.Join(filepath, snapshot), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
-		defer snapshotFile.Close()
-		if err != nil {
-			panic(err)
-		}
-		pEnc := gob.NewEncoder(processFile)
-		sEnc := gob.NewEncoder(snapshotFile)
+		defer func() { processFile.Close(); snapshotFile.Close() }()
+		lg.Debugln("data processing started")
 
 		for {
-			err := stream.Recv(buf)
+			var record Record
+			err := stream.Recv(&record)
 			if err != nil {
 				if err != io.EOF && err != io.ErrUnexpectedEOF {
-					fmt.Println(err)
+					lg.Errorln(err)
 				}
 				break
 			}
+			pEnc.Encode(&pRecord{record.Timestamp, record.Processes})
 
-			pbuf.Timestamp = buf.Timestamp
-			pbuf.Processes = buf.Processes
-			pEnc.Encode(pbuf)
-
-			if buf.Snapshot != "" {
-				sbuf.Timestamp = buf.Timestamp
-				sbuf.Snapshot = buf.Snapshot
-				sEnc.Encode(sbuf)
+			if record.Snapshot != "" {
+				sEnc.Encode(&sRecord{record.Timestamp, record.Snapshot})
 			}
 		}
 	}()

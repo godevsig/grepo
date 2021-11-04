@@ -49,12 +49,12 @@ var (
 )
 
 type chartServer struct {
-	ip            string
-	chartport     string
-	fileport      string
-	dir           string
-	chartShutdown chan struct{}
-	lg            *log.Logger
+	ip        string
+	chartport string
+	fileport  string
+	dir       string
+	lg        *log.Logger
+	srv       *http.Server
 }
 
 func newRecords() *processRecords {
@@ -101,18 +101,19 @@ func rank(avg map[string]uint64) list {
 	return l
 }
 
-//Parse parse encode record file
-func Parse(filename string) {
+//ParseFile parse encode record file
+func ParseFile(filename string) error {
 	in, err := os.Open(filename)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer in.Close()
 
 	out, err := os.Create(filename + ".parsed")
 	if err != nil {
-		panic(err)
+		return err
 	}
+	defer out.Close()
 
 	decoder := gob.NewDecoder(in)
 	for err != io.EOF {
@@ -126,6 +127,7 @@ func Parse(filename string) {
 			out.WriteString(line)
 		}
 	}
+	return nil
 }
 
 func (prs *processRecords) sortMap(mode string, m map[string]([]uint64), f func(k string, v []uint64)) {
@@ -720,17 +722,14 @@ func (cs *chartServer) updatePageTpl() {
 }
 
 func newChartServer(lg *log.Logger, ip, chartport, fileport, dir string) *chartServer {
-	return &chartServer{
-		ip:            ip,
-		chartport:     chartport,
-		fileport:      fileport,
-		dir:           dir,
-		lg:            lg,
-		chartShutdown: make(chan struct{}),
+	cs := &chartServer{
+		ip:        ip,
+		chartport: chartport,
+		fileport:  fileport,
+		dir:       dir,
+		lg:        lg,
 	}
-}
 
-func (cs *chartServer) start() {
 	router := mux.NewRouter().StrictSlash(false)
 	router.HandleFunc("/{tag}/{session}", cs.lineHandler)
 	router.HandleFunc("/{tag}/{session}/info", cs.infoHandler)
@@ -739,31 +738,26 @@ func (cs *chartServer) start() {
 
 	cs.updatePageTpl()
 
-	idleConnsClosed := make(chan struct{})
-	srv := &http.Server{
+	cs.srv = &http.Server{
 		Addr:    ":" + cs.chartport,
 		Handler: router,
 	}
 
-	go func() {
-		<-cs.chartShutdown
-		if err := srv.Shutdown(context.Background()); err != nil {
-			cs.lg.Errorf("chart http server shutdown: %v", err)
-		}
-		cs.lg.Infoln("chart http server shutdown successfully")
-		close(idleConnsClosed)
-	}()
+	return cs
+}
 
-	cs.lg.Infof("start chart http server addr %s", srv.Addr)
+func (cs *chartServer) start() {
+	cs.lg.Infof("start chart http server addr %s", cs.srv.Addr)
 
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+	if err := cs.srv.ListenAndServe(); err != http.ErrServerClosed {
 		cs.lg.Errorf("chart http server ListenAndServe: %v", err)
 		return
 	}
-
-	<-idleConnsClosed
 }
 
 func (cs *chartServer) stop() {
-	close(cs.chartShutdown)
+	if err := cs.srv.Shutdown(context.Background()); err != nil {
+		cs.lg.Errorf("chart http server shutdown: %v", err)
+	}
+	cs.lg.Infoln("chart http server shutdown successfully")
 }
