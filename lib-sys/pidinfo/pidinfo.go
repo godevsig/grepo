@@ -36,7 +36,7 @@ type cpuTick struct {
 	nice      uint64
 	system    uint64
 	idle      uint64
-	iowait    uint64
+	iowait    int64
 	irq       uint64
 	softirq   uint64
 	steal     uint64
