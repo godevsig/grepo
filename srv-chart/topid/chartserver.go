@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"math"
@@ -23,6 +24,7 @@ import (
 	"github.com/go-echarts/go-echarts/v2/types"
 	"github.com/godevsig/grepo/lib-sys/log"
 	"github.com/gorilla/mux"
+	"github.com/russross/blackfriday"
 )
 
 type pair struct {
@@ -43,6 +45,8 @@ type processRecords struct {
 }
 
 var (
+	//go:embed README.md
+	readme string
 	//go:embed echarts/echarts.min.js
 	echarts string
 	//go:embed echarts/themes/shine.js
@@ -662,6 +666,10 @@ func (cs *chartServer) pieHandler(w http.ResponseWriter, r *http.Request) {
 	page.Render(w)
 }
 
+func (cs *chartServer) readmeHandler(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte(template.HTML(blackfriday.MarkdownCommon([]byte(readme)))))
+}
+
 func (cs *chartServer) infoHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	tag := params["tag"]
@@ -739,7 +747,7 @@ func (cs *chartServer) updatePageTpl() {
 				<script type="text/javascript">%s</script>
 				<style> .btn { justify-content:space-around; padding-left:50px; float:left; width:150px } </style>
 				<div class="btn">
-					<a href="http://%s:%s/README"><input type="button" style="width:100px;height:30px;border:5px #E67E22 double;margin-top:10px" value="README"/></a>
+					<a href="http://%s:%s/readme"><input type="button" style="width:100px;height:30px;border:5px #E67E22 double;margin-top:10px" value="README"/></a>
 					<a href="http://%s:%s"><input type="button" style="width:100px;height:30px;border:5px #E67E22 double;margin-top:10px" value="HISTORY"/></a>
 					<input id="info" type="button" style="width:100px;height:30px;border:5px #2980B9 double;margin-top:10px"value="INFO"/>
 					<input id="snapshot" type="button" style="width:100px;height:30px;border:5px #2980B9 double;margin-top:10px"value="SNAPSHOT"/>
@@ -754,7 +762,7 @@ func (cs *chartServer) updatePageTpl() {
 				</body>
 				</html>
 				{{ end }}
-				`, echarts, themes, cs.ip, cs.fileport, cs.ip, cs.chartport)
+				`, echarts, themes, cs.ip, cs.chartport, cs.ip, cs.fileport)
 }
 
 func newChartServer(lg *log.Logger, ip, chartport, fileport, dir string) *chartServer {
@@ -768,6 +776,7 @@ func newChartServer(lg *log.Logger, ip, chartport, fileport, dir string) *chartS
 	}
 
 	router := mux.NewRouter().StrictSlash(false)
+	router.HandleFunc("/readme", cs.readmeHandler)
 	router.HandleFunc("/{tag}/{session}", cs.lineHandler)
 	router.HandleFunc("/{tag}/{session}/info", cs.infoHandler)
 	router.HandleFunc("/{tag}/{session}/pie", cs.pieHandler)

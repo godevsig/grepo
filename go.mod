@@ -7,6 +7,7 @@ require (
 	github.com/godevsig/adaptiveservice v0.9.6
 	github.com/gorilla/mux v1.8.0
 	github.com/peterh/liner v1.2.1
+	github.com/russross/blackfriday v1.6.0
 )
 
 replace github.com/niubaoshu/gotiny => github.com/godevsig/gotiny v0.0.4-0.20210913173728-083dd4b72177
