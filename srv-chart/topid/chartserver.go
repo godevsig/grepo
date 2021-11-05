@@ -166,7 +166,6 @@ func (prs *processRecords) analysis(filename string, filter *filter) error {
 	defer f.Close()
 
 	decoder := gob.NewDecoder(f)
-
 	for err != io.EOF {
 		var buf = pRecord{}
 		err = decoder.Decode(&buf)
@@ -195,29 +194,26 @@ func (prs *processRecords) analysis(filename string, filter *filter) error {
 	}
 
 	for k, v := range prs.cpu {
+		if len(v) < len(prs.time) {
+			prs.cpu[k] = append(prs.cpu[k], make([]float32, len(prs.time)-len(v))...)
+		}
 		prs.cpumax[k], prs.cpuavg[k] = maxAndAvg(v)
 		if prs.cpuavg[k] <= filter.cpuavg && prs.cpumax[k] <= filter.cpumax {
 			delete(prs.cpu, k)
 			delete(prs.cpuavg, k)
 			delete(prs.cpumax, k)
-		} else {
-			if len(v) < len(prs.time) {
-				prs.cpu[k] = append(prs.cpu[k], make([]float32, len(prs.time)-len(v))...)
-			}
 		}
-
 	}
 
 	for k, v := range prs.mem {
+		if len(v) < len(prs.time) {
+			prs.mem[k] = append(prs.mem[k], make([]float32, len(prs.time)-len(v))...)
+		}
 		prs.memmax[k], prs.memavg[k] = maxAndAvg(v)
 		if prs.memavg[k] <= filter.memavg && prs.memmax[k] <= filter.memmax {
 			delete(prs.mem, k)
 			delete(prs.memavg, k)
 			delete(prs.memmax, k)
-		} else {
-			if len(v) < len(prs.time) {
-				prs.mem[k] = append(prs.mem[k], make([]float32, len(prs.time)-len(v))...)
-			}
 		}
 	}
 
@@ -756,7 +752,7 @@ func newChartServer(lg *log.Logger, ip, chartport, fileport, dir string) *chartS
 		fileport:  fileport,
 		dir:       dir,
 		lg:        lg,
-		filter:    &filter{cpuavg: 1, cpumax: 10, memavg: 5, memmax: 10},
+		filter:    &filter{cpuavg: 1, cpumax: 10, memavg: 10, memmax: 20},
 	}
 
 	router := mux.NewRouter().StrictSlash(false)
