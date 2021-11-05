@@ -26,8 +26,8 @@ type sRecord struct {
 type ProcessInfo struct {
 	Pid  int
 	Name string
-	Ucpu uint64 // 1234 means 12.34% per single core
-	Scpu uint64 // 1234 means 12.34% per single core
+	Ucpu float32
+	Scpu float32
 	Mem  uint64 // in KB
 }
 

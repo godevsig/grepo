@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,19 +27,19 @@ import (
 
 type pair struct {
 	key   string
-	value uint64
+	value float32
 }
 
 type list []pair
 
 type processRecords struct {
 	time   []string
-	cpu    map[string]([]uint64)
-	mem    map[string]([]uint64)
-	cpuavg map[string]uint64
-	memavg map[string]uint64
-	cpumax map[string]uint64
-	memmax map[string]uint64
+	cpu    map[string]([]float32)
+	mem    map[string]([]float32)
+	cpuavg map[string]float32
+	memavg map[string]float32
+	cpumax map[string]float32
+	memmax map[string]float32
 }
 
 var (
@@ -48,40 +49,53 @@ var (
 	themes string
 )
 
+type filter struct {
+	cpuavg float32
+	cpumax float32
+	memavg float32
+	memmax float32
+}
+
 type chartServer struct {
 	ip        string
 	chartport string
 	fileport  string
 	dir       string
+	filter    *filter
 	lg        *log.Logger
 	srv       *http.Server
 }
 
 func newRecords() *processRecords {
 	return &processRecords{
-		cpu:    make(map[string]([]uint64)),
-		mem:    make(map[string]([]uint64)),
-		cpuavg: make(map[string]uint64),
-		memavg: make(map[string]uint64),
-		cpumax: make(map[string]uint64),
-		memmax: make(map[string]uint64),
+		cpu:    make(map[string]([]float32)),
+		mem:    make(map[string]([]float32)),
+		cpuavg: make(map[string]float32),
+		memavg: make(map[string]float32),
+		cpumax: make(map[string]float32),
+		memmax: make(map[string]float32),
 	}
 }
 
-func floatConv(value float64) float64 {
-	return math.Round(value*100) / 100
+func floatConv(value float32) float32 {
+	return float32(math.Round(float64(value)*100) / 100)
 }
 
-func maxAndAvg(series []uint64) (max, avg uint64) {
+func string2float32(value string) float32 {
+	tmp, _ := strconv.ParseFloat(value, 32)
+	return float32(tmp)
+}
+
+func maxAndAvg(series []float32) (max, avg float32) {
 	if len := len(series); len != 0 {
-		var sum uint64 = 0
+		var sum float32 = 0.0
 		for _, v := range series {
 			if v > max {
 				max = v
 			}
 			sum += v
 		}
-		avg = uint64(int(sum) / len)
+		avg = sum / float32(len)
 	}
 	return
 }
@@ -90,7 +104,7 @@ func (p list) Len() int           { return len(p) }
 func (p list) Less(i, j int) bool { return p[i].value < p[j].value }
 func (p list) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
-func rank(avg map[string]uint64) list {
+func rank(avg map[string]float32) list {
 	l := make(list, len(avg))
 	i := 0
 	for k, v := range avg {
@@ -130,7 +144,7 @@ func ParseFile(filename string) error {
 	return nil
 }
 
-func (prs *processRecords) sortMap(mode string, m map[string]([]uint64), f func(k string, v []uint64)) {
+func (prs *processRecords) sortMap(mode string, m map[string]([]float32), f func(k string, v []float32)) {
 	l := make(list, len(prs.cpuavg))
 	switch mode {
 	case "cpu":
@@ -144,7 +158,7 @@ func (prs *processRecords) sortMap(mode string, m map[string]([]uint64), f func(
 	}
 }
 
-func (prs *processRecords) analysis(filename string) error {
+func (prs *processRecords) analysis(filename string, filter *filter) error {
 	f, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -170,25 +184,25 @@ func (prs *processRecords) analysis(filename string) error {
 					name = fmt.Sprintf("%v-%v", b.Name, b.Pid)
 				}
 				if _, ok := prs.cpu[name]; !ok {
-					reserved := make([]uint64, len(prs.time)-1)
+					reserved := make([]float32, len(prs.time)-1)
 					prs.cpu[name] = append(prs.cpu[name], reserved...)
 					prs.mem[name] = append(prs.mem[name], reserved...)
 				}
-				prs.cpu[name] = append(prs.cpu[name], b.Ucpu+b.Scpu)
-				prs.mem[name] = append(prs.mem[name], b.Mem)
+				prs.cpu[name] = append(prs.cpu[name], floatConv(b.Ucpu+b.Scpu))
+				prs.mem[name] = append(prs.mem[name], float32(b.Mem/1024))
 			}
 		}
 	}
 
 	for k, v := range prs.cpu {
 		prs.cpumax[k], prs.cpuavg[k] = maxAndAvg(v)
-		if prs.cpuavg[k] <= (0.5*100) && prs.cpumax[k] <= (5*100) {
+		if prs.cpuavg[k] <= filter.cpuavg && prs.cpumax[k] <= filter.cpumax {
 			delete(prs.cpu, k)
 			delete(prs.cpuavg, k)
 			delete(prs.cpumax, k)
 		} else {
 			if len(v) < len(prs.time) {
-				prs.cpu[k] = append(prs.cpu[k], make([]uint64, len(prs.time)-len(v))...)
+				prs.cpu[k] = append(prs.cpu[k], make([]float32, len(prs.time)-len(v))...)
 			}
 		}
 
@@ -196,13 +210,13 @@ func (prs *processRecords) analysis(filename string) error {
 
 	for k, v := range prs.mem {
 		prs.memmax[k], prs.memavg[k] = maxAndAvg(v)
-		if prs.memavg[k] <= (1*1024) && prs.memmax[k] <= (10*1024) {
+		if prs.memavg[k] <= filter.memavg && prs.memmax[k] <= filter.memmax {
 			delete(prs.mem, k)
 			delete(prs.memavg, k)
 			delete(prs.memmax, k)
 		} else {
 			if len(v) < len(prs.time) {
-				prs.mem[k] = append(prs.mem[k], make([]uint64, len(prs.time)-len(v))...)
+				prs.mem[k] = append(prs.mem[k], make([]float32, len(prs.time)-len(v))...)
 			}
 		}
 	}
@@ -305,10 +319,10 @@ func (prs *processRecords) lineCPU() *charts.Line {
 	line.AddJSFuncs(fn)
 
 	line = line.SetXAxis(prs.time)
-	prs.sortMap("cpu", prs.cpu, func(k string, v []uint64) {
+	prs.sortMap("cpu", prs.cpu, func(k string, v []float32) {
 		items := make([]opts.LineData, 0, len(prs.time))
 		for _, data := range v {
-			items = append(items, opts.LineData{Value: float64(data) / 100})
+			items = append(items, opts.LineData{Value: data})
 		}
 
 		line.AddSeries(k, items)
@@ -413,10 +427,10 @@ func (prs *processRecords) lineMEM() *charts.Line {
 	line.AddJSFuncs(fn)
 
 	line = line.SetXAxis(prs.time)
-	prs.sortMap("mem", prs.mem, func(k string, v []uint64) {
+	prs.sortMap("mem", prs.mem, func(k string, v []float32) {
 		items := make([]opts.LineData, 0, len(prs.time))
 		for _, data := range v {
-			items = append(items, opts.LineData{Value: floatConv(float64(data) / 1024)})
+			items = append(items, opts.LineData{Value: data})
 		}
 
 		line.AddSeries(k, items)
@@ -441,6 +455,17 @@ func (cs *chartServer) lineHandler(w http.ResponseWriter, r *http.Request) {
 	tag := params["tag"]
 	session := "process-" + params["session"]
 
+	vars := r.URL.Query()
+	if filterVar, ok := vars["filter"]; ok {
+		filterVar = strings.Split(filterVar[0], ",")
+		if len(filterVar) == 4 {
+			cs.filter.cpuavg = string2float32(filterVar[0])
+			cs.filter.cpumax = string2float32(filterVar[1])
+			cs.filter.memavg = string2float32(filterVar[2])
+			cs.filter.memmax = string2float32(filterVar[3])
+		}
+	}
+
 	if tag != "" && (strings.Index(session, ".") != -1) {
 		file, err := os.Open(cs.dir + tag + "/" + session)
 		defer file.Close()
@@ -455,7 +480,7 @@ func (cs *chartServer) lineHandler(w http.ResponseWriter, r *http.Request) {
 	in := fmt.Sprintf("%v/%v/%v.data", cs.dir, tag, session)
 
 	records := newRecords()
-	if err := records.analysis(in); err != nil {
+	if err := records.analysis(in, cs.filter); err != nil {
 		cs.lg.Errorln(err)
 		return
 	}
@@ -588,6 +613,17 @@ func (cs *chartServer) pieHandler(w http.ResponseWriter, r *http.Request) {
 	tag := params["tag"]
 	session := "process-" + params["session"]
 
+	vars := r.URL.Query()
+	if filterVar, ok := vars["filter"]; ok {
+		filterVar = strings.Split(filterVar[0], ",")
+		if len(filterVar) == 4 {
+			cs.filter.cpuavg = string2float32(filterVar[0])
+			cs.filter.cpumax = string2float32(filterVar[1])
+			cs.filter.memavg = string2float32(filterVar[2])
+			cs.filter.memmax = string2float32(filterVar[3])
+		}
+	}
+
 	if tag != "" && (strings.Index(session, ".") != -1) {
 		file, err := os.Open(cs.dir + tag + "/" + session)
 		defer file.Close()
@@ -602,7 +638,7 @@ func (cs *chartServer) pieHandler(w http.ResponseWriter, r *http.Request) {
 	in := fmt.Sprintf("%v/%v/%v.data", cs.dir, tag, session)
 
 	records := newRecords()
-	if err := records.analysis(in); err != nil {
+	if err := records.analysis(in, cs.filter); err != nil {
 		cs.lg.Errorln(err)
 		return
 	}
@@ -720,6 +756,7 @@ func newChartServer(lg *log.Logger, ip, chartport, fileport, dir string) *chartS
 		fileport:  fileport,
 		dir:       dir,
 		lg:        lg,
+		filter:    &filter{cpuavg: 1, cpumax: 10, memavg: 5, memmax: 10},
 	}
 
 	router := mux.NewRouter().StrictSlash(false)
