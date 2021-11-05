@@ -261,14 +261,26 @@ func (prs *processRecords) lineCPU() *charts.Line {
 					option_%s.legend.selected = obj;
 					goecharts_%s.setOption(option_%s);
 					document.getElementById("snapshot").onclick=function(){
-						location.href=location.href+"/snapshot";
+						var url = location.href;
+						if (url.indexOf("?") != -1) {
+							url = url.replace(/(\?|#)[^'"]*/, '');
+						}
+						location.href=url+"/snapshot";
 					};
 					document.getElementById("info").onclick=function(){
-						location.href=location.href+"/info";
+						var url = location.href;
+						if (url.indexOf("?") != -1) {
+							url = url.replace(/(\?|#)[^'"]*/, '');
+						}
+						location.href=url+"/info";
 					};
 					document.getElementById("pieview").onclick=function(){
 						this.value="PIEVIEW";
-						location.href=location.href+"/pie";
+						var url = location.href;
+						if (url.indexOf("?") != -1) {
+							url = url.replace(/(\?|#)[^'"]*/, '');
+						}
+						location.href=url+"/pie";
 					};
 					document.getElementById("cpuselectall").onclick=function(){
 						var flag=this.getAttribute("flag");
@@ -296,11 +308,11 @@ func (prs *processRecords) lineCPU() *charts.Line {
 						if(flag==1){
 							val=false;
 							this.setAttribute("flag",0);
-							this.value="P-CPU";
+							this.value="CPU-P";
 						}else{
 							val=true;
 							this.setAttribute("flag",1);
-							this.value="SYSCPU";
+							this.value="CPUSYS";
 						}
 						for(var key in option_%s.series){
 							if(option_%s.series[key].name.indexOf("[") != -1){
@@ -404,11 +416,11 @@ func (prs *processRecords) lineMEM() *charts.Line {
 						if(flag==1){
 							val=false;
 							this.setAttribute("flag",0);
-							this.value="P-MEM";
+							this.value="MEM-P";
 						}else{
 							val=true;
 							this.setAttribute("flag",1);
-							this.value="SYSMEM";
+							this.value="MEMSYS";
 						}
 						for(var key in option_%s.series){
 							if(option_%s.series[key].name.indexOf("[") != -1){
@@ -727,15 +739,15 @@ func (cs *chartServer) updatePageTpl() {
 				<script type="text/javascript">%s</script>
 				<style> .btn { justify-content:space-around; padding-left:50px; float:left; width:150px } </style>
 				<div class="btn">
-					<a href="http://%s:%s/README"><input type="button" style="width:100px;height:30px;border:5px orange double;margin-top:10px" value="README"/></a>
-					<a href="http://%s:%s"><input type="button" style="width:100px;height:30px;border:5px orange double;margin-top:10px" value="HISTORY"/></a>
-					<input id="info" type="button" style="width:100px;height:30px;border:5px blue double;margin-top:10px"value="INFO"/>
-					<input id="snapshot" type="button" style="width:100px;height:30px;border:5px blue double;margin-top:10px"value="SNAPSHOT"/>
-					<input id="pieview" type="button" style="width:100px;height:30px;border:5px blue double;margin-top:10px"value="PIEVIEW"/>
-					<input id="cpuselectall" type="button" style="width:100px;height:30px;border:5px blue double;margin-top:10px"value="CPUOFF" flag="1"/>
-					<input id="memselectall" type="button" style="width:100px;height:30px;border:5px blue double;margin-top:10px"value="MEMOFF" flag="1"/>
-					<input id="syscpu" type="button" style="width:100px;height:30px;border:5px blue double;margin-top:10px"value="SYSCPU" flag="1"/>
-					<input id="sysmem" type="button" style="width:100px;height:30px;border:5px blue double;margin-top:10px"value="SYSMEM" flag="1"/>
+					<a href="http://%s:%s/README"><input type="button" style="width:100px;height:30px;border:5px #E67E22 double;margin-top:10px" value="README"/></a>
+					<a href="http://%s:%s"><input type="button" style="width:100px;height:30px;border:5px #E67E22 double;margin-top:10px" value="HISTORY"/></a>
+					<input id="info" type="button" style="width:100px;height:30px;border:5px #2980B9 double;margin-top:10px"value="INFO"/>
+					<input id="snapshot" type="button" style="width:100px;height:30px;border:5px #2980B9 double;margin-top:10px"value="SNAPSHOT"/>
+					<input id="pieview" type="button" style="width:100px;height:30px;border:5px #2980B9 double;margin-top:10px"value="PIEVIEW"/>
+					<input id="cpuselectall" type="button" style="width:100px;height:30px;border:5px #27AE60 double;margin-top:10px"value="CPUOFF" flag="1"/>
+					<input id="syscpu" type="button" style="width:100px;height:30px;border:5px #27AE60 double;margin-top:10px"value="CPUSYS" flag="1"/>
+					<input id="memselectall" type="button" style="width:100px;height:30px;border:5px #8E44AD double;margin-top:10px"value="MEMOFF" flag="1"/>
+					<input id="sysmem" type="button" style="width:100px;height:30px;border:5px #8E44AD double;margin-top:10px"value="MEMSYS" flag="1"/>
 				</div>
 				<style> .box { justify-content:center; flex-wrap:wrap; float:left } </style>
 				<div class="box"> {{- range .Charts }} {{ template "base" . }} {{- end }} </div>
