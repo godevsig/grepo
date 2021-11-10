@@ -244,8 +244,6 @@ func (prs *processRecords) lineCPU() *charts.Line {
 			Height: "350px",
 		}),
 		charts.WithDataZoomOpts(opts.DataZoom{
-			Start:      0,
-			End:        100,
 			XAxisIndex: []int{0},
 		}),
 		charts.WithLegendOpts(opts.Legend{
@@ -374,8 +372,6 @@ func (prs *processRecords) lineMEM() *charts.Line {
 			Height: "350px",
 		}),
 		charts.WithDataZoomOpts(opts.DataZoom{
-			Start:      0,
-			End:        100,
 			XAxisIndex: []int{0},
 		}),
 		charts.WithLegendOpts(opts.Legend{
