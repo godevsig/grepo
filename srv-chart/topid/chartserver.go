@@ -53,6 +53,13 @@ var (
 	themes string
 )
 
+const (
+	cpuavgThreshold = 2
+	cpumaxThreshold = 10
+	memavgThreshold = 10
+	memmaxThreshold = 20
+)
+
 type filter struct {
 	cpuavg float32
 	cpumax float32
@@ -472,6 +479,11 @@ func (cs *chartServer) lineHandler(w http.ResponseWriter, r *http.Request) {
 			cs.filter.memavg = string2float32(filterVar[2])
 			cs.filter.memmax = string2float32(filterVar[3])
 		}
+	} else {
+		cs.filter.cpuavg = cpuavgThreshold
+		cs.filter.cpumax = cpumaxThreshold
+		cs.filter.memavg = memavgThreshold
+		cs.filter.memmax = memmaxThreshold
 	}
 
 	if tag != "" && (strings.Index(session, ".") != -1) {
@@ -630,6 +642,11 @@ func (cs *chartServer) pieHandler(w http.ResponseWriter, r *http.Request) {
 			cs.filter.memavg = string2float32(filterVar[2])
 			cs.filter.memmax = string2float32(filterVar[3])
 		}
+	} else {
+		cs.filter.cpuavg = cpuavgThreshold
+		cs.filter.cpumax = cpumaxThreshold
+		cs.filter.memavg = memavgThreshold
+		cs.filter.memmax = memmaxThreshold
 	}
 
 	if tag != "" && (strings.Index(session, ".") != -1) {
@@ -768,7 +785,7 @@ func newChartServer(lg *log.Logger, ip, chartport, fileport, dir string) *chartS
 		fileport:  fileport,
 		dir:       dir,
 		lg:        lg,
-		filter:    &filter{cpuavg: 2, cpumax: 10, memavg: 10, memmax: 20},
+		filter:    &filter{cpuavg: cpuavgThreshold, cpumax: cpumaxThreshold, memavg: memavgThreshold, memmax: memmaxThreshold},
 	}
 
 	router := mux.NewRouter().StrictSlash(false)
