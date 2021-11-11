@@ -21,7 +21,7 @@ Will output:
 Hello 你好 Hola Hallo Bonjour Ciao Χαίρετε こんにちは 여보세요
 Version: 0.2.1
 Visit below URL to get the chart:
-http://10.10.10.10:8070/meaningfulTag/20211027-iikvqtmc
+http://10.10.10.10:9998/meaningfultag/20211111-ntivpjtp
 ```
 
 ## Real time priority
@@ -36,16 +36,16 @@ priority:
 
 ```
 ~/gshell # gsh run -h
-Usage of run [options] <package_path/file.go> [args...]
-        Look for package_path/file.go in `pwd` or else in `gshell repo`,
-        run it in a new VM in specified gre on local/remote system:
-  -e string
-        create new or use existing gre(gshell runtime environment) (default "master")
+Usage of run [options] <file.go> [args...]
+        Look for file.go in local file system or else in `gshell repo`,
+        run it in a new GRE in specified GRG on local/remote system:
+  -group string
+        create new or use existing GRG (default "<random>")
   -i    enter interactive mode
   -rm
-        automatically remove the VM when it exits
+        automatically remove the GRE when it exits
   -rt string
-        Set the gre to SCHED_RR min/max priority 1/99 on new gre creation
+        Set the GRG to SCHED_RR min/max priority 1/99 on new GRG creation
         Caution: gshell daemon must be started as root to set realtime attributes
 ```
 
@@ -56,54 +56,55 @@ Note: root privilege is required to be able to set real time priority.
 `gsh run -i` enters interactive output mode, you can `Ctrl+C` after URL shows up,
 topid.go will continue to run at background.
 
-If you `gsh run` without `-i`, e.g. `gsh run path/file.go` will prints its VM ID
+If you `gsh run` without `-i`, e.g. `gsh run path/file.go` will prints its GRE ID
 after the named `file.go` was successfully started. The output can then be checked
-by `gsh log` with that VM ID. You can also use `gsh ps` to find that ID.
+by `gsh log` with that GRE ID. You can also use `gsh ps` to find that ID.
 
 ```
 ~/gshell # gsh ps
-VM ID         IN GRE            NAME              START AT             STATUS
-5a50d0d88d63  master.v21.10.24  topid             1970/10/09 00:16:26  running    1m7.864362664s
-~/gshell #
-~/gshell # gsh log 5a50d0d88d63
+GRE ID        IN GROUP            NAME                START AT             STATUS
+af794a6cceaa  tfkenk.v21.11.rc3   topid               1970/10/23 21:15:12  running    2m8.097382229s
+
+~/gshell # gsh log af794a6cceaa
 Hello 你好 Hola Hallo Bonjour Ciao Χαίρετε こんにちは 여보세요
 Version: 0.2.1
 Visit below URL to get the chart:
-http://10.10.10.10:8070/meaningfulTag/20211027-iikvqtmc
+http://10.10.10.10:9998/meaningfultag/20211111-ntivpjtp
 ```
 
 ## Stop and restart
 
-You can stop the previous `gsh run` instance by its VM ID.
+You can stop the previous `gsh run` instance by its GRE ID.
 
 ```
 ~/gshell # gsh ps
-VM ID         IN GRE            NAME              START AT             STATUS
-5a50d0d88d63  master.v21.10.24  topid             1970/10/09 00:16:26  running    8m59.544776242s
-~/gshell #
-~/gshell # gsh stop 5a50d0d88d63
-5a50d0d88d63
+GRE ID        IN GROUP            NAME                START AT             STATUS
+62485b4fc5d3  qyvuzp.v21.11.rc3   hello               1970/10/23 21:19:12  exited:OK  11.10736ms
+af794a6cceaa  tfkenk.v21.11.rc3   topid               1970/10/23 21:15:12  running    4m24.982602464s
+
+~/gshell # gsh stop af794a6cceaa
+af794a6cceaa
 stopped
-~/gshell # gsh ps
-VM ID         IN GRE            NAME              START AT             STATUS
-5a50d0d88d63  master.v21.10.24  topid             1970/10/09 00:16:26  exited:ERR 9m7.490003021s
 ```
 
-If you want to start topid again, just do `gsh restart` the stopped VM is enough.
-The following output shows VM ID `5a50d0d88d63` was stopped and restared, it generates a new URL:
+If you want to start topid again, just do `gsh restart` the stopped GRE is enough.
+The following output shows GRE ID `af794a6cceaa` was stopped and restared, it generates a new URL:
 
 ```
-~/gshell # gsh ps
-VM ID         IN GRE            NAME              START AT             STATUS
-5a50d0d88d63  master.v21.10.24  topid             1970/10/09 00:16:26  exited:ERR 9m7.490003021s
-~/gshell # gsh restart 5a50d0d88d63
-5a50d0d88d63
+~/gshell # gsh restart af794a6cceaa
+af794a6cceaa
 restarted
-~/gshell # gsh log 5a50d0d88d63
+
+~/gshell # gsh log af794a6cceaa
 Hello 你好 Hola Hallo Bonjour Ciao Χαίρετε こんにちは 여보세요
 Version: 0.2.1
 Visit below URL to get the chart:
-http://10.10.10.10:8070/meaningfulTag/20211027-mxrmurfj
+http://10.10.10.10:9998/meaningfultag/20211111-xdtfmvhd
+
+~/gshell # gsh ps
+GRE ID        IN GROUP            NAME                START AT             STATUS
+62485b4fc5d3  qyvuzp.v21.11.rc3   hello               1970/10/23 21:19:12  exited:OK  11.10736ms
+af794a6cceaa  tfkenk.v21.11.rc3   topid               1970/10/23 21:19:50  running    7.420186219s
 ```
 
 ## Parameters of topid.go
@@ -113,12 +114,12 @@ http://10.10.10.10:8070/meaningfulTag/20211027-mxrmurfj
 - `-chart`: send data to chart server
 - `-snapshot`: optional, periodically send process data to chart server
 - `-sys`: also collect system CPU and mem data
-- `-i 3`: collect data every 3 seconds
+- `-i 5`: collect data every 5 seconds
 - `-tag name`: mark this run as "name", this tag will be part of the generated URL
 - `-info "cmd1,cmd2,cmd3..."`: extra info of the system, will be shown in the web
 
 ```
-~/gshell # gsh run -i -rm app-platform/topid/topid.go -h
+~/gshell # gsh run -i -rm app-perf/topid/topid.go -h
 Hello 你好 Hola Hallo Bonjour Ciao Χαίρετε こんにちは 여보세요
 Version: 0.2.1
 Usage:
@@ -169,7 +170,6 @@ topid also supports PSS, but this usually uses more CPU to do the calculation.
   apps(.go files) locally and remotely. Each daemon in the network is identified by
   provider ID, see below output, `00e3df230009` is the provider ID that can be used to
   run gshell apps on that system, from another `gshell daemon` system.
-  See [Run gshell apps remotely](TBD) for details.
 
 - "topidchart" service by publisher "platform" should be up and running in the network.
   Use `gshell list` to check all the available micro services, the last line is "topidchart".
@@ -177,6 +177,7 @@ topid also supports PSS, but this usually uses more CPU to do the calculation.
 ```
 $ gshell  list
 PUBLISHER                 SERVICE                   PROVIDER      WLOP(SCOPE)
+builtin                   IPObserver                self          1000
 builtin                   LANRegistry               self            11
 builtin                   providerInfo              self            11
 builtin                   registryInfo              self            11
@@ -184,10 +185,12 @@ builtin                   reverseProxy              fa163ecfb434   100
 builtin                   reverseProxy              self          1100
 builtin                   serviceLister             self            11
 godevsig                  codeRepo                  self          1111
-godevsig                  gre-master.v21.10.24      self            10
+godevsig                  grg-owcaxi.v21.11.rc2     self            10
+godevsig                  gshellDaemon              00198f936ea2  1000
 godevsig                  gshellDaemon              00e3df230009  1000
+godevsig                  gshellDaemon              184a6fefbbba  1000
 godevsig                  gshellDaemon              fa163ecfb434  1100
 godevsig                  gshellDaemon              self          1111
 godevsig                  updater                   self          1111
-platform                  topidchart                fa163ecfb434  1100
+platform                  topidchart                fa163ecfb434  1000
 ```

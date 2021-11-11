@@ -768,7 +768,7 @@ func newChartServer(lg *log.Logger, ip, chartport, fileport, dir string) *chartS
 		fileport:  fileport,
 		dir:       dir,
 		lg:        lg,
-		filter:    &filter{cpuavg: 1, cpumax: 10, memavg: 10, memmax: 20},
+		filter:    &filter{cpuavg: 2, cpumax: 10, memavg: 10, memmax: 20},
 	}
 
 	router := mux.NewRouter().StrictSlash(false)
