@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
-	"html/template"
 	"io"
 	"io/ioutil"
 	"math"
@@ -22,9 +21,10 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/go-echarts/go-echarts/v2/templates"
 	"github.com/go-echarts/go-echarts/v2/types"
+	as "github.com/godevsig/adaptiveservice"
 	"github.com/godevsig/grepo/lib-sys/log"
+	"github.com/godevsig/grepo/srv-chart/markdown"
 	"github.com/gorilla/mux"
-	"github.com/russross/blackfriday"
 )
 
 type pair struct {
@@ -680,7 +680,21 @@ func (cs *chartServer) pieHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cs *chartServer) readmeHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(template.HTML(blackfriday.MarkdownCommon([]byte(readme)))))
+	c := as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(3)
+	conn := <-c.Discover("platform", "markdown")
+	if conn == nil {
+		http.Error(w, "markdown service not found.", 404)
+		return
+	}
+
+	var resp markdown.Response
+	if err := conn.SendRecv(&markdown.Request{Text: readme}, &resp); err != nil {
+		cs.lg.Errorf("get html failed: %v", err)
+		return
+	}
+	conn.Close()
+
+	w.Write([]byte(resp.HTML))
 }
 
 func (cs *chartServer) infoHandler(w http.ResponseWriter, r *http.Request) {
