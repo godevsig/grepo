@@ -19,9 +19,7 @@ var server *docit.Server
 func Start(args []string) (err error) {
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.SetOutput(os.Stdout)
-
 	logLevel := flags.String("logLevel", "info", "debug/info/warn/error")
-
 	if err := flags.Parse(args); err != nil {
 		if err == flag.ErrHelp {
 			err = nil

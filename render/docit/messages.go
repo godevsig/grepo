@@ -15,13 +15,13 @@ import (
 //go:embed github-markdown.css
 var css string
 
-// Request is the message sent by client.
-type Request struct {
+// MarkdownRequest is the message sent by client.
+type MarkdownRequest struct {
 	Text string `json:"text"`
 }
 
-// Response is the message replied by server.
-type Response struct {
+// HTMLResponse is the message replied by server.
+type HTMLResponse struct {
 	HTML string
 }
 
@@ -53,7 +53,7 @@ curl \
 */
 
 // Handle handles msg.
-func (msg *Request) Handle(stream as.ContextStream) (reply interface{}) {
+func (msg *MarkdownRequest) Handle(stream as.ContextStream) (reply interface{}) {
 	payload, _ := json.Marshal(msg)
 	body := bytes.NewReader(payload)
 
@@ -79,36 +79,14 @@ func (msg *Request) Handle(stream as.ContextStream) (reply interface{}) {
 		fmt.Println(err)
 		return err
 	}
-	return &Response{HTML: genHTML(string(respBody))}
-}
-
-func genHTML(body string) string {
-	return fmt.Sprintf("<style>%s</style>%s<article class=\"markdown-body\">%s</article>", css, layout, body)
-}
-
-//Run start service.
-func Run(args []string) (err error) {
-	var opts = []as.Option{as.WithScope(as.ScopeWAN)}
-	server := as.NewServer(opts...).SetPublisher("platform")
-	if err := server.Publish("markdown",
-		knownMsgs,
-	); err != nil {
-		fmt.Printf("create markdown server failed: %v", err)
-		return err
-	}
-	err = server.Serve()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	return nil
+	return &HTMLResponse{HTML: fmt.Sprintf("<style>%s</style>%s<article class=\"markdown-body\">%s</article>", css, layout, string(respBody))}
 }
 
 var knownMsgs = []as.KnownMessage{
-	(*Request)(nil),
+	(*MarkdownRequest)(nil),
 }
 
 func init() {
-	as.RegisterType((*Request)(nil))
-	as.RegisterType((*Response)(nil))
+	as.RegisterType((*MarkdownRequest)(nil))
+	as.RegisterType((*HTMLResponse)(nil))
 }

@@ -7,32 +7,30 @@ import (
 	"github.com/godevsig/grepo/lib/sys/log"
 )
 
-// Server represents markdown server
+// Server represents docit server
 type Server struct {
-	lg *log.Logger
-	ms *as.Server
+	lg      *log.Logger
+	service *as.Server
 }
 
 // NewServer creates a new server instance.
 func NewServer(lg *log.Logger) *Server {
 	var opts = []as.Option{as.WithScope(as.ScopeWAN), as.WithLogger(lg)}
-	ms := as.NewServer(opts...).SetPublisher("platform")
-
-	return &Server{lg: lg, ms: ms}
+	s := as.NewServer(opts...).SetPublisher("platform")
+	return &Server{lg: lg, service: s}
 }
 
 // Run runs the server.
 func (server *Server) Run() error {
-
-	if err := server.ms.Publish("markdown",
+	if err := server.service.Publish("docit",
 		knownMsgs,
 		as.OnNewStreamFunc(func(ctx as.Context) { ctx.SetContext(server.lg) }),
 	); err != nil {
-		server.lg.Errorf("create markdown server failed: %v", err)
+		server.lg.Errorf("create docit server failed: %v", err)
 		return err
 	}
 
-	err := server.ms.Serve()
+	err := server.service.Serve()
 	if err != nil {
 		server.lg.Errorln(err)
 	}
@@ -41,5 +39,5 @@ func (server *Server) Run() error {
 
 // Close shutdown the server.
 func (server *Server) Close() {
-	server.ms.Close()
+	server.service.Close()
 }

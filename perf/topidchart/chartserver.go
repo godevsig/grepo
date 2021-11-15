@@ -72,6 +72,7 @@ type chartServer struct {
 	chartport string
 	fileport  string
 	dir       string
+	readme    string
 	filter    *filter
 	lg        *log.Logger
 	srv       *http.Server
@@ -680,21 +681,7 @@ func (cs *chartServer) pieHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cs *chartServer) readmeHandler(w http.ResponseWriter, r *http.Request) {
-	c := as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(3)
-	conn := <-c.Discover("platform", "docit")
-	if conn == nil {
-		http.Error(w, "docit service not found.", 404)
-		return
-	}
-
-	var resp docit.Response
-	if err := conn.SendRecv(&docit.Request{Text: readme}, &resp); err != nil {
-		cs.lg.Errorf("get html failed: %v", err)
-		return
-	}
-	conn.Close()
-
-	w.Write([]byte(resp.HTML))
+	w.Write([]byte(cs.readme))
 }
 
 func (cs *chartServer) infoHandler(w http.ResponseWriter, r *http.Request) {
@@ -793,12 +780,26 @@ func (cs *chartServer) updatePageTpl() {
 }
 
 func newChartServer(lg *log.Logger, ip, chartport, fileport, dir string) *chartServer {
+	c := as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(3)
+	conn := <-c.Discover("platform", "docit")
+	if conn == nil {
+		lg.Errorln("docit service not found.")
+		return nil
+	}
+	var resp docit.HTMLResponse
+	if err := conn.SendRecv(&docit.MarkdownRequest{Text: readme}, &resp); err != nil {
+		lg.Errorf("get markdown rendered html failed: %v", err)
+		return nil
+	}
+	conn.Close()
+
 	cs := &chartServer{
 		ip:        ip,
 		chartport: chartport,
 		fileport:  fileport,
 		dir:       dir,
 		lg:        lg,
+		readme:    resp.HTML,
 		filter:    &filter{cpuavg: cpuavgThreshold, cpumax: cpumaxThreshold, memavg: memavgThreshold, memmax: memmaxThreshold},
 	}
 

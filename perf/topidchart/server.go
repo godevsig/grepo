@@ -47,6 +47,10 @@ func NewServer(lg *log.Logger, port, dir string) *Server {
 	}
 
 	cs := newChartServer(lg, ip, port, fs.port, dir)
+	if cs == nil {
+		lg.Errorln("create chart server failed")
+		return nil
+	}
 
 	var opts = []as.Option{as.WithScope(as.ScopeWAN), as.WithLogger(lg)}
 	ds := as.NewServer(opts...).SetPublisher("platform")
