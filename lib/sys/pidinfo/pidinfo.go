@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	ef "github.com/godevsig/grepo/lib-base/efuncs"
-	et "github.com/godevsig/grepo/lib-base/etypes"
+	ef "github.com/godevsig/grepo/lib/base/efuncs"
+	et "github.com/godevsig/grepo/lib/base/etypes"
 )
 
 // CheckLevles controls if we need to check threads and/or children

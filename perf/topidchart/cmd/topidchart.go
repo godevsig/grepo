@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"os"
 
-	_ "embed" //embed: read file
-
 	as "github.com/godevsig/adaptiveservice"
-	"github.com/godevsig/grepo/lib-sys/log"
-	"github.com/godevsig/grepo/srv-chart/markdown"
+	"github.com/godevsig/grepo/lib/sys/log"
+	topid "github.com/godevsig/grepo/perf/topidchart"
 )
 
-var server *markdown.Server
+var server *topid.Server
 
 // Start starts the app
 func Start(args []string) (err error) {
@@ -21,6 +19,9 @@ func Start(args []string) (err error) {
 	flags.SetOutput(os.Stdout)
 
 	logLevel := flags.String("logLevel", "info", "debug/info/warn/error")
+	dir := flags.String("dir", "topidata", "set directory for saving topid raw data")
+	port := flags.String("port", "9998", "set port for visiting chart http server")
+	parsefile := flags.String("parse", "", "parse file")
 
 	if err := flags.Parse(args); err != nil {
 		if err == flag.ErrHelp {
@@ -29,22 +30,26 @@ func Start(args []string) (err error) {
 		return err
 	}
 
+	if len(*parsefile) != 0 {
+		return topid.ParseFile(*parsefile)
+	}
+
 	stream := log.NewStream("")
 	stream.SetOutputter(os.Stdout)
-	lg := stream.NewLogger("markdown", log.StringToLoglevel(*logLevel))
+	lg := stream.NewLogger("topidchart", log.StringToLoglevel(*logLevel))
 
 	c := as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(3)
-	conn := <-c.Discover("platform", "markdown")
+	conn := <-c.Discover("platform", "topidchart")
 	if conn != nil {
 		conn.Close()
-		lg.Warnln("markdown server already running")
+		lg.Warnln("topid chart server already running")
 		return nil
 	}
 
-	fmt.Println("markdown server starting...")
-	server = markdown.NewServer(lg)
+	fmt.Println("topid chart server starting...")
+	server = topid.NewServer(lg, *port, *dir)
 	if server == nil {
-		return errors.New("create markdown server failed")
+		return errors.New("create topid chart server failed")
 	}
 
 	return server.Run()
@@ -52,7 +57,7 @@ func Start(args []string) (err error) {
 
 // Stop stops the app
 func Stop() {
-	fmt.Println("markdown server stopping...")
+	fmt.Println("topid chart server stopping...")
 	server.Close()
 }
 

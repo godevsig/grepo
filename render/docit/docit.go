@@ -1,10 +1,10 @@
-package markdown
+package docit
 
 import (
 	_ "embed" //embed: read file
 
 	as "github.com/godevsig/adaptiveservice"
-	"github.com/godevsig/grepo/lib-sys/log"
+	"github.com/godevsig/grepo/lib/sys/log"
 )
 
 // Server represents markdown server

@@ -13,9 +13,9 @@ import (
 
 	as "github.com/godevsig/adaptiveservice"
 
-	"github.com/godevsig/grepo/lib-sys/pidinfo"
-	"github.com/godevsig/grepo/lib-sys/shell"
-	"github.com/godevsig/grepo/srv-chart/topid"
+	"github.com/godevsig/grepo/lib/sys/pidinfo"
+	"github.com/godevsig/grepo/lib/sys/shell"
+	topid "github.com/godevsig/grepo/perf/topidchart"
 )
 
 type pidValue []int

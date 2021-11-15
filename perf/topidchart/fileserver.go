@@ -12,7 +12,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/godevsig/grepo/lib-sys/log"
+	"github.com/godevsig/grepo/lib/sys/log"
 	"github.com/gorilla/mux"
 )
 

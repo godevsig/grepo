@@ -22,8 +22,8 @@ import (
 	"github.com/go-echarts/go-echarts/v2/templates"
 	"github.com/go-echarts/go-echarts/v2/types"
 	as "github.com/godevsig/adaptiveservice"
-	"github.com/godevsig/grepo/lib-sys/log"
-	"github.com/godevsig/grepo/srv-chart/markdown"
+	"github.com/godevsig/grepo/lib/sys/log"
+	"github.com/godevsig/grepo/render/docit"
 	"github.com/gorilla/mux"
 )
 
@@ -681,14 +681,14 @@ func (cs *chartServer) pieHandler(w http.ResponseWriter, r *http.Request) {
 
 func (cs *chartServer) readmeHandler(w http.ResponseWriter, r *http.Request) {
 	c := as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(3)
-	conn := <-c.Discover("platform", "markdown")
+	conn := <-c.Discover("platform", "docit")
 	if conn == nil {
-		http.Error(w, "markdown service not found.", 404)
+		http.Error(w, "docit service not found.", 404)
 		return
 	}
 
-	var resp markdown.Response
-	if err := conn.SendRecv(&markdown.Request{Text: readme}, &resp); err != nil {
+	var resp docit.Response
+	if err := conn.SendRecv(&docit.Request{Text: readme}, &resp); err != nil {
 		cs.lg.Errorf("get html failed: %v", err)
 		return
 	}
