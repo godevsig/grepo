@@ -8,7 +8,6 @@ import (
 
 	_ "embed" //embed: read file
 
-	as "github.com/godevsig/adaptiveservice"
 	"github.com/godevsig/grepo/lib/sys/log"
 	"github.com/godevsig/grepo/render/docit"
 )
@@ -30,14 +29,6 @@ func Start(args []string) (err error) {
 	stream := log.NewStream("")
 	stream.SetOutputter(os.Stdout)
 	lg := stream.NewLogger("docit", log.StringToLoglevel(*logLevel))
-
-	c := as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(3)
-	conn := <-c.Discover("platform", "docit")
-	if conn != nil {
-		conn.Close()
-		lg.Warnln("docit server already running")
-		return nil
-	}
 
 	fmt.Println("docit server starting...")
 	server = docit.NewServer(lg)

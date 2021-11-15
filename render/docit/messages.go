@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	_ "embed" //embed: read file
@@ -16,6 +16,7 @@ import (
 var css string
 
 // MarkdownRequest is the message sent by client.
+// Reply HTMLResponse.
 type MarkdownRequest struct {
 	Text string `json:"text"`
 }
@@ -74,7 +75,7 @@ func (msg *MarkdownRequest) Handle(stream as.ContextStream) (reply interface{}) 
 	}
 	defer resp.Body.Close()
 
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 		return err

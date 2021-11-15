@@ -780,7 +780,7 @@ func (cs *chartServer) updatePageTpl() {
 }
 
 func newChartServer(lg *log.Logger, ip, chartport, fileport, dir string) *chartServer {
-	c := as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(3)
+	c := as.NewClient().SetDiscoverTimeout(3)
 	conn := <-c.Discover("platform", "docit")
 	if conn == nil {
 		lg.Errorln("docit service not found.")

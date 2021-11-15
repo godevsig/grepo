@@ -15,7 +15,7 @@ type Server struct {
 
 // NewServer creates a new server instance.
 func NewServer(lg *log.Logger) *Server {
-	var opts = []as.Option{as.WithScope(as.ScopeWAN), as.WithLogger(lg)}
+	var opts = []as.Option{as.WithLogger(lg)}
 	s := as.NewServer(opts...).SetPublisher("platform")
 	return &Server{lg: lg, service: s}
 }

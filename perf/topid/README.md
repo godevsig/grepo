@@ -27,11 +27,11 @@ http://10.10.10.10:9998/meaningfultag/20211111-ntivpjtp
 ## Real time priority
 
 It is seen sometimes especially in very high CPU load condition that there are abnormal
-high spikes showed in CPU usage chart, it is because the gre(gshell runtime environment)
-in which topid.go is running has low schedule priority, causing delayed colletion of
+high spikes showed in CPU usage chart, it is because the grg(gshell runtime group)
+in which topid.go is running has low scheduling priority, causing delayed colletion of
 performance data and then CPU usage is incorrectly calculated.
 
-That is why we use `gsh run -rt 91` to start topid.go, which sets the gre to SCHED_RR 91
+That is why we use `gsh run -rt 91` to start topid.go, which sets the grg to SCHED_RR 91
 priority:
 
 ```
@@ -54,7 +54,7 @@ Note: root privilege is required to be able to set real time priority.
 ## Interactive output mode
 
 `gsh run -i` enters interactive output mode, you can `Ctrl+C` after URL shows up,
-topid.go will continue to run at background.
+topid.go will continue to run in background.
 
 If you `gsh run` without `-i`, e.g. `gsh run path/file.go` will prints its GRE ID
 after the named `file.go` was successfully started. The output can then be checked
@@ -119,7 +119,7 @@ af794a6cceaa  tfkenk.v21.11.rc3   topid               1970/10/23 21:19:50  runni
 - `-info "cmd1,cmd2,cmd3..."`: extra info of the system, will be shown in the web
 
 ```
-~/gshell # gsh run -i -rm app-perf/topid/topid.go -h
+~/gshell # gsh run -i -rm perf/topid/topid.go -h
 Hello 你好 Hola Hallo Bonjour Ciao Χαίρετε こんにちは 여보세요
 Version: 0.2.1
 Usage:
@@ -157,7 +157,7 @@ Usage:
 
 ## RSS mem vs PSS mem
 
-Memory usage data per process is collected in RSS by default, linux top also uses RSS.
+Memory usage data per process is collected in RSS by default, linux top command also uses RSS.
 
 - RSS: resident set size, number of pages the process has in real memory.
 - PSS: proportional share of the process memory mappings.
@@ -169,7 +169,7 @@ topid also supports PSS, but this usually uses more CPU to do the calculation.
 - one system should start one gshell daemon, gshell daemon is responsible to run gshell
   apps(.go files) locally and remotely. Each daemon in the network is identified by
   provider ID, see below output, `00e3df230009` is the provider ID that can be used to
-  run gshell apps on that system, from another `gshell daemon` system.
+  run gshell apps on that system, from another gshell enabled system.
 
 - "topidchart" service by publisher "platform" should be up and running in the network.
   Use `gshell list` to check all the available micro services, the last line is "topidchart".

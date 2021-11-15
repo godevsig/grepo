@@ -4,11 +4,9 @@ topid is a cpu/mem stats visualization profiler.
 
 ## Set CPU/MEM filter
 
-Appending `?filter=2,10,10,20` to the URL outputted by topid can set the filter which
-determines which processes you want to show in the chart.
-
-The filer has format `average CPU, maximum CPU, average MEM, maximum MEM`,
-default value is `2,10,10,20` which means:
+Appending `?filter=avg CPU,max CPU,avg MEM,max MEM` to the URL outputted by topid can
+set the filter which determines which processes you want to show in the chart.
+The default value is `?filter=2,10,10,20` which means:
 
 - The processes whose avg CPU usage less than 2% AND max CPU usage less than 10%
   will not show in CPU usage chart.
@@ -73,7 +71,9 @@ github.com/godevsig/grepo master
 Follow the URL that topid.go outputs to get topid chart.
 
 See
+
 1. [Deploy gshell daemon](https://github.com/godevsig/gshellos/blob/master/docs/daemon.md)
+1. [topid usage](https://github.com/godevsig/grepo/tree/master/perf/topid/README.md)
 
 # gshell introduction
 
