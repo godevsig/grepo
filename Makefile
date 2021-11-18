@@ -16,5 +16,10 @@ vet: ## Examine and report suspicious constructs
 test: ## Run unit tests
 	@go test ${PKG_LIST}
 
+msgcheck: ## Check the generated messages
+	@go generate ./...
+	@echo Checking if the generated messages was forgotten to commit...
+	@git status | grep "working tree clean"
+
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
