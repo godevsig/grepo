@@ -1,4 +1,4 @@
-package topid
+package topidchart
 
 import (
 	"fmt"
@@ -27,7 +27,7 @@ var (
 
 // NewServer creates a new server instance.
 func NewServer(lg *log.Logger, port, dir string) *Server {
-	c := as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(3)
+	c := as.NewClient().SetDiscoverTimeout(3)
 	conn := <-c.Discover("builtin", "IPObserver")
 	if conn == nil {
 		lg.Errorln("IPObserver service not found")
@@ -52,7 +52,7 @@ func NewServer(lg *log.Logger, port, dir string) *Server {
 		return nil
 	}
 
-	var opts = []as.Option{as.WithScope(as.ScopeWAN), as.WithLogger(lg)}
+	var opts = []as.Option{as.WithLogger(lg)}
 	ds := as.NewServer(opts...).SetPublisher("platform")
 
 	hostAddr = fmt.Sprintf("%s:%s", ip, port)

@@ -15,7 +15,7 @@ import (
 
 	"github.com/godevsig/grepo/lib/sys/pidinfo"
 	"github.com/godevsig/grepo/lib/sys/shell"
-	topid "github.com/godevsig/grepo/perf/topidchart"
+	topid "github.com/godevsig/grepo/perf/topidchart/topidchart"
 )
 
 type pidValue []int
@@ -227,7 +227,7 @@ func Start(args []string) (err error) {
 
 	var chartConn as.Connection
 	if recordMode {
-		c := as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(3)
+		c := as.NewClient().SetDiscoverTimeout(3)
 		chartConn = <-c.Discover("platform", "topidchart")
 		if chartConn == nil {
 			return errors.New("connect to chart server failed")

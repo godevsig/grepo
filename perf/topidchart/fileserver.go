@@ -1,4 +1,4 @@
-package topid
+package topidchart
 
 import (
 	"context"

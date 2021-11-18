@@ -46,8 +46,3 @@ func init() {
 	as.RegisterType((*SessionResponse)(nil))
 	as.RegisterType((*Record)(nil))
 }
-
-//go:generate mkdir -p $GOPACKAGE
-//go:generate sh -c "grep -v go:generate $GOFILE > $GOPACKAGE/$GOFILE"
-//go:generate gopls format -w $GOPACKAGE/$GOFILE
-//go:generate git add $GOPACKAGE/$GOFILE
