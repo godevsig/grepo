@@ -780,27 +780,25 @@ func (cs *chartServer) updatePageTpl() {
 }
 
 func newChartServer(lg *log.Logger, ip, chartport, fileport, dir string) *chartServer {
-	c := as.NewClient().SetDiscoverTimeout(3)
-	conn := <-c.Discover("platform", "docit")
-	if conn == nil {
-		lg.Errorln("docit service not found.")
-		return nil
-	}
-	var resp docit.HTMLResponse
-	if err := conn.SendRecv(&docit.MarkdownRequest{Text: readme}, &resp); err != nil {
-		lg.Errorf("get markdown rendered html failed: %v", err)
-		return nil
-	}
-	conn.Close()
-
 	cs := &chartServer{
 		ip:        ip,
 		chartport: chartport,
 		fileport:  fileport,
 		dir:       dir,
 		lg:        lg,
-		readme:    resp.HTML,
+		readme:    readme,
 		filter:    &filter{cpuavg: cpuavgThreshold, cpumax: cpumaxThreshold, memavg: memavgThreshold, memmax: memmaxThreshold},
+	}
+
+	c := as.NewClient().SetDiscoverTimeout(0)
+	conn := <-c.Discover("platform", "docit")
+	if conn != nil {
+		var resp docit.HTMLResponse
+		err := conn.SendRecv(&docit.MarkdownRequest{Text: readme}, &resp)
+		if err == nil {
+			cs.readme = resp.HTML
+		}
+		conn.Close()
 	}
 
 	router := mux.NewRouter().StrictSlash(false)

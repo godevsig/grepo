@@ -27,18 +27,17 @@ var (
 
 // NewServer creates a new server instance.
 func NewServer(lg *log.Logger, port, dir string) *Server {
-	c := as.NewClient().SetDiscoverTimeout(3)
+	ip := "0.0.0.0"
+	c := as.NewClient().SetDiscoverTimeout(0)
 	conn := <-c.Discover("builtin", "IPObserver")
-	if conn == nil {
-		lg.Errorln("IPObserver service not found")
-		return nil
+	if conn != nil {
+		var observedIP string
+		err := conn.SendRecv(as.GetObservedIP{}, &observedIP)
+		if err == nil {
+			ip = observedIP
+		}
+		conn.Close()
 	}
-	var ip string
-	if err := conn.SendRecv(as.GetObservedIP{}, &ip); err != nil {
-		lg.Errorln("get observed ip failed: %v", err)
-		return nil
-	}
-	conn.Close()
 
 	fs := newFileServer(lg, dir)
 	if fs == nil {
