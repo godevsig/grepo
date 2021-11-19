@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math"
+	"net"
 	"net/http"
 	"os"
 	"sort"
@@ -471,6 +472,11 @@ func (cs *chartServer) lineHandler(w http.ResponseWriter, r *http.Request) {
 	tag := params["tag"]
 	session := "process-" + params["session"]
 
+	ip, _, err := net.SplitHostPort(r.URL.Host)
+	if err == nil {
+		cs.ip = ip
+	}
+
 	vars := r.URL.Query()
 	if filterVar, ok := vars["filter"]; ok {
 		filterVar = strings.Split(filterVar[0], ",")
@@ -506,6 +512,7 @@ func (cs *chartServer) lineHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cs.updatePageTpl()
 	page := components.NewPage()
 	page.PageTitle = "Performance Analysis Tool"
 	page.AddCharts(
@@ -807,8 +814,6 @@ func newChartServer(lg *log.Logger, ip, chartport, fileport, dir string) *chartS
 	router.HandleFunc("/{tag}/{session}/info", cs.infoHandler)
 	router.HandleFunc("/{tag}/{session}/pie", cs.pieHandler)
 	router.HandleFunc("/{tag}/{session}/snapshot", cs.snapshotHandler)
-
-	cs.updatePageTpl()
 
 	cs.srv = &http.Server{
 		Addr:    ":" + cs.chartport,
