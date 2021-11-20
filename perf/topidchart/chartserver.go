@@ -472,7 +472,7 @@ func (cs *chartServer) lineHandler(w http.ResponseWriter, r *http.Request) {
 	tag := params["tag"]
 	session := "process-" + params["session"]
 
-	ip, _, err := net.SplitHostPort(r.URL.Host)
+	ip, _, err := net.SplitHostPort(r.Host)
 	if err == nil {
 		cs.ip = ip
 	}
