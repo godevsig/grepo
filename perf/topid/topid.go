@@ -255,6 +255,9 @@ func Start(args []string) (err error) {
 			return err
 		}
 		fmt.Println("Visit below URL to get the chart:")
+		if strings.Contains(sessionRep.ChartURL, "0.0.0.0") {
+			fmt.Println("(replace 0.0.0.0 with the real IP of the chart server)")
+		}
 		fmt.Println(sessionRep.ChartURL)
 	}
 
