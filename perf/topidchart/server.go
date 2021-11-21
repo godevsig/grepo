@@ -28,7 +28,7 @@ var (
 // NewServer creates a new server instance.
 func NewServer(lg *log.Logger, port, dir string) *Server {
 	ip := "0.0.0.0"
-	c := as.NewClient().SetDiscoverTimeout(0)
+	c := as.NewClient(as.WithScope(as.ScopeWAN)).SetDiscoverTimeout(0)
 	conn := <-c.Discover("builtin", "IPObserver")
 	if conn != nil {
 		var observedIP string
