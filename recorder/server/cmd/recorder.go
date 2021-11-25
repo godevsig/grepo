@@ -21,7 +21,7 @@ func Start(args []string) (err error) {
 	logLevel := flags.String("logLevel", "info", "debug/info/warn/error")
 	port := flags.String("port", "0", "set server port, default 0 means alloced by net Listener")
 	dir := flags.String("dir", "log", "set directory for saving recorder log data")
-	title := flags.String("title", "file database", "set title of file server")
+	title := flags.String("title", "RECORDER DATA", "set HTML title of file server")
 
 	if err := flags.Parse(args); err != nil {
 		if err == flag.ErrHelp {
