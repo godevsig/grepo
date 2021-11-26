@@ -7,17 +7,15 @@ import (
 
 	as "github.com/godevsig/adaptiveservice"
 	"github.com/godevsig/grepo/lib/sys/log"
+	"github.com/godevsig/grepo/util/fileserver"
 )
 
 // Server represents data server
 type Server struct {
-	ip   string
-	port string
-	dir  string
-	lg   *log.Logger
-	ds   *as.Server   // data server
-	fs   *fileServer  // file server
-	cs   *chartServer // chart server
+	lg *log.Logger
+	ds *as.Server             // data server
+	fs *fileserver.FileServer // file server
+	cs *chartServer           // chart server
 }
 
 var (
@@ -39,13 +37,13 @@ func NewServer(lg *log.Logger, port, dir string) *Server {
 		conn.Close()
 	}
 
-	fs := newFileServer(lg, dir)
+	fs := fileserver.NewFileServer(lg, "0", dir, "TOPID DATA")
 	if fs == nil {
 		lg.Errorln("create file server failed")
 		return nil
 	}
 
-	cs := newChartServer(lg, ip, port, fs.port, dir)
+	cs := newChartServer(lg, ip, port, fs.Port, dir)
 	if cs == nil {
 		lg.Errorln("create chart server failed")
 		return nil
@@ -58,13 +56,10 @@ func NewServer(lg *log.Logger, port, dir string) *Server {
 	dataDir = dir
 
 	server := &Server{
-		ip:   ip,
-		port: port,
-		dir:  dir,
-		lg:   lg,
-		ds:   ds,
-		fs:   fs,
-		cs:   cs,
+		lg: lg,
+		ds: ds,
+		fs: fs,
+		cs: cs,
 	}
 
 	return server
@@ -72,9 +67,9 @@ func NewServer(lg *log.Logger, port, dir string) *Server {
 
 // Run runs the server.
 func (server *Server) Run() error {
-	defer func() { server.cs.stop(); server.fs.stop() }()
+	defer func() { server.cs.stop(); server.fs.Stop() }()
 
-	go server.fs.start()
+	go server.fs.Start()
 	go server.cs.start()
 
 	if err := server.ds.Publish("topidchart",
