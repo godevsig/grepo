@@ -1,21 +1,26 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
-	"net"
-	"net/http"
 	"os"
+
+	"github.com/godevsig/grepo/lib/sys/log"
+	"github.com/godevsig/grepo/util/fileserver"
 )
 
-var lnr net.Listener
+var fs *fileserver.FileServer
 
 // Start starts the app
 func Start(args []string) (err error) {
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.SetOutput(os.Stdout)
+
+	logLevel := flags.String("logLevel", "info", "debug/info/warn/error")
 	dir := flags.String("dir", "", "directory to be served")
-	port := flags.String("port", "8088", "port for http")
+	port := flags.String("port", "0", "set server port, default 0 means alloced by net Listener")
+	title := flags.String("title", "file server", "title of file server")
 	if err = flags.Parse(args); err != nil {
 		if err == flag.ErrHelp {
 			err = nil
@@ -26,30 +31,26 @@ func Start(args []string) (err error) {
 	if len(*dir) == 0 {
 		return fmt.Errorf("no dir specified")
 	}
-	fmt.Printf("file server for %s @ :%s\n", *dir, *port)
 
-	lnr, err = net.Listen("tcp", ":"+*port)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		lnr.Close()
-		fmt.Println("file server stopped")
-	}()
+	stream := log.NewStream("")
+	stream.SetOutputter(os.Stdout)
+	lg := stream.NewLogger("recorder", log.StringToLoglevel(*logLevel))
 
-	fs := http.FileServer(http.Dir(*dir))
-	fmt.Println("file server running...")
-	if err := http.Serve(lnr, fs); err != nil {
-		return err
+	fs = fileserver.NewFileServer(lg, *port, *dir, *title)
+	if fs == nil {
+		return errors.New("create file server failed")
 	}
 
+	fmt.Printf("file server for %s @ :%s\n", *dir, fs.Port)
+
+	fs.Start()
 	return nil
 }
 
 // Stop stops the app
 func Stop() {
 	fmt.Println("file server stopping...")
-	lnr.Close()
+	fs.Stop()
 }
 
 func main() {
