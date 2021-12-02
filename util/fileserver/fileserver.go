@@ -141,13 +141,14 @@ func (fs *FileServer) fileDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 // Start start the file server
-func (fs *FileServer) Start() {
+func (fs *FileServer) Start() error {
 	fs.lg.Infof("start file http server addr %s", fs.srv.Addr)
 
-	if err := fs.srv.Serve(fs.listener); err != http.ErrServerClosed {
+	err := fs.srv.Serve(fs.listener)
+	if err != http.ErrServerClosed {
 		fs.lg.Errorf("file http server ListenAndServe: %v", err)
-		return
 	}
+	return err
 }
 
 // Stop stop the file server

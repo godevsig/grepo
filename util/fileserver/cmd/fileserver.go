@@ -34,7 +34,7 @@ func Start(args []string) (err error) {
 
 	stream := log.NewStream("")
 	stream.SetOutputter(os.Stdout)
-	lg := stream.NewLogger("recorder", log.StringToLoglevel(*logLevel))
+	lg := stream.NewLogger("fileserver", log.StringToLoglevel(*logLevel))
 
 	fs = fileserver.NewFileServer(lg, *port, *dir, *title)
 	if fs == nil {
@@ -43,8 +43,7 @@ func Start(args []string) (err error) {
 
 	fmt.Printf("file server for %s @ :%s\n", *dir, fs.Port)
 
-	fs.Start()
-	return nil
+	return fs.Start()
 }
 
 // Stop stops the app

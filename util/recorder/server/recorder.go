@@ -8,7 +8,7 @@ import (
 
 	as "github.com/godevsig/adaptiveservice"
 	"github.com/godevsig/grepo/lib/sys/log"
-	"github.com/godevsig/grepo/recorder"
+	"github.com/godevsig/grepo/util/recorder"
 )
 
 var server *recorder.Server

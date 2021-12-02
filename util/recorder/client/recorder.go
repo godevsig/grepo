@@ -8,7 +8,7 @@ import (
 	"os/exec"
 
 	as "github.com/godevsig/adaptiveservice"
-	"github.com/godevsig/grepo/recorder"
+	"github.com/godevsig/grepo/util/recorder"
 )
 
 var (
