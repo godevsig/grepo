@@ -66,7 +66,7 @@ func NewMessageIO(netconn net.Conn) *MessageIO {
 		enc:     gotiny.NewEncoderWithPtr(&msg),
 		dec:     gotiny.NewDecoderWithPtr(&msg),
 	}
-	//mio.dec.SetCopyMode()
+	mio.dec.SetCopyMode()
 	return mio
 }
 

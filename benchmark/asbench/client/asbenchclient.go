@@ -8,7 +8,7 @@ import (
 	"time"
 
 	as "github.com/godevsig/adaptiveservice"
-	"github.com/godevsig/grepo/benchmark/asbench/asbench"
+	"github.com/godevsig/grepo/benchmark/asbench"
 	"github.com/godevsig/grepo/lib/sys/log"
 )
 
