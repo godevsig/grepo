@@ -145,7 +145,10 @@ func (fs *FileServer) Start() error {
 	fs.lg.Infof("start file http server addr %s", fs.srv.Addr)
 
 	err := fs.srv.Serve(fs.listener)
-	if err != http.ErrServerClosed {
+	if err == http.ErrServerClosed {
+		err = nil
+	}
+	if err != nil {
 		fs.lg.Errorf("file http server ListenAndServe: %v", err)
 	}
 	return err
