@@ -65,8 +65,8 @@ const pageTpl = `
 	</html>`
 
 // NewFileServer creates a new file server instance.
-// If port = "0", alloc available port by Listen
-// If port > "0", use customized ip port
+// If port = "0", alloc available port by Listen.
+// If port != "0", use customized ip port.
 func NewFileServer(lg *log.Logger, port, dir, title string) *FileServer {
 	listener, err := net.Listen("tcp", ":"+port)
 	if err != nil {

@@ -18,7 +18,7 @@ func Start(args []string) (err error) {
 	flags.SetOutput(os.Stdout)
 
 	logLevel := flags.String("logLevel", "info", "debug/info/warn/error")
-	dir := flags.String("dir", "", "directory to be served")
+	dir := flags.String("dir", "", "absolute directory path to be served")
 	port := flags.String("port", "0", "set server port, default 0 means alloced by net Listener")
 	title := flags.String("title", "file server", "title of file server")
 	if err = flags.Parse(args); err != nil {
