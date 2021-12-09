@@ -14,18 +14,18 @@ func init() {
 }
 
 // Handle handles msg.
-func (msg UploadRequest) Handle(stream as.ContextStream) (reply interface{}) {
+func (msg *UploadRequest) Handle(stream as.ContextStream) (reply interface{}) {
 	// discard everything, reply 0 to client.
 	return 0
 }
 
 // Handle handles msg.
-func (msg DownloadRequest) Handle(stream as.ContextStream) (reply interface{}) {
+func (msg *DownloadRequest) Handle(stream as.ContextStream) (reply interface{}) {
 	// reply fixed value content to client.
 	return content[:msg.Size]
 }
 
 var knownMsgs = []as.KnownMessage{
-	UploadRequest{},
-	DownloadRequest{},
+	(*UploadRequest)(nil),
+	(*DownloadRequest)(nil),
 }

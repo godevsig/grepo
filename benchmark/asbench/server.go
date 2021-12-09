@@ -12,7 +12,7 @@ type Server struct {
 
 // NewServer creates a new server instance.
 func NewServer(lg *log.Logger) *Server {
-	s := as.NewServer(as.WithLogger(lg)).SetPublisher("benchmark")
+	s := as.NewServer(as.WithLogger(lg)).SetPublisher("benchmark").DisableMsgTypeCheck()
 	if err := s.Publish("asbench",
 		knownMsgs,
 	); err != nil {

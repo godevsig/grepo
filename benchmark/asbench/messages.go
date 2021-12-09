@@ -28,6 +28,6 @@ type DownloadRequest struct {
 }
 
 func init() {
-	as.RegisterType(UploadRequest{})
-	as.RegisterType(DownloadRequest{})
+	as.RegisterType((*UploadRequest)(nil))
+	as.RegisterType((*DownloadRequest)(nil))
 }

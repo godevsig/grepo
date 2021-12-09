@@ -73,7 +73,7 @@ func Start(args []string) (err error) {
 		var rep []byte
 		var counter int64
 		for running {
-			if err := stream.SendRecv(req, &rep); err != nil {
+			if err := stream.SendRecv(&req, &rep); err != nil {
 				panic(err)
 			}
 			counter++
@@ -89,7 +89,7 @@ func Start(args []string) (err error) {
 		var counter int64
 		var rep int
 		for running {
-			if err := stream.SendRecv(req, &rep); err != nil {
+			if err := stream.SendRecv(&req, &rep); err != nil {
 				panic(err)
 			}
 			counter++
