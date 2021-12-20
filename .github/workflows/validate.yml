@@ -21,7 +21,10 @@ jobs:
 
     - name: Install dependencies
       run: |
-        go get -u golang.org/x/lint/golint
+        go get golang.org/x/lint/golint
+
+    - name: Check message
+      run: make msgcheck
 
     - name: Check format
       run: make format
