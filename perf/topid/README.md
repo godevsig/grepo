@@ -12,7 +12,7 @@ visualizes the data into charts.
 ```
 cd /path/to/gshell
 alias gsh='bin/gshell'
-gsh run -rt 91 -i app-platform/topid/topid.go -chart -snapshot -sys -i 3 -tag meaningfulTag
+gsh run -i perf/topid/topid.go -chart -snapshot -sys -i 5 -tag meaningfulTag
 ```
 
 Will output:

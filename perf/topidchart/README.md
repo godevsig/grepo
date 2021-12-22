@@ -57,6 +57,27 @@ Build tags: stdbase,stdcommon,stdruntime,adaptiveservice,shell,log,pidinfo,topid
 Commit: 5e77199ae4d3c1579491177cacddb0d80b77bfd8
 ```
 
+### Options of gsh run
+
+```shell
+$ gsh run -h
+Usage of run [options] <file.go> [args...]
+        Look for file.go in local file system or else in `gshell repo`,
+        run it in a new GRE in specified GRG on local/remote system:
+  -group string
+        create new or use existing GRG (default "<random>")
+  -i    enter interactive mode
+  -maxprocs int
+        set GOMAXPROCS variable (default -1)
+  -rm
+        automatically remove the GRE when it exits
+  -rt string
+        set the GRG to SCHED_RR min/max priority 1/99 on new GRG creation
+        Caution: gshell daemon must be started as root to set realtime attributes
+  -ver string
+        specify the running GRG version, default to target daemon version
+```
+
 ## Run topid app
 
 Once `gshell daemon` has been started, use `gsh run` to run any go apps/services in the central repo:
@@ -65,12 +86,23 @@ Once `gshell daemon` has been started, use `gsh run` to run any go apps/services
 ~/gshell # gsh repo
 github.com/godevsig/grepo master
 
-~/gshell # gsh run -rt 91 -i app-perf/topid/topid.go -chart -snapshot -sys -i 5 -tag meaningfultag
+~/gshell # gsh run -rt 91 -i perf/topid/topid.go -chart -snapshot -sys -i 5 -tag meaningfultag
 ```
 
 Follow the URL that topid.go outputs to get topid chart.
 
-See
+### Parameters of topid.go
+
+- topid by default collect all process performance data, use `-p pid -child` to specify
+  pid if only the pid and its child are interested.
+- `-chart`: send data to chart server
+- `-snapshot`: optional, periodically send process data to chart server
+- `-sys`: also collect system CPU and mem data
+- `-i 5`: collect data every 5 seconds
+- `-tag name`: mark this run as "name", this tag will be part of the generated URL
+- `-info "cmd1,cmd2,cmd3..."`: extra info of the system, will be shown in the web
+
+See also:
 
 1. [Deploy gshell daemon](https://github.com/godevsig/gshellos/blob/master/docs/daemon.md)
 1. [topid usage](https://github.com/godevsig/grepo/tree/master/perf/topid/README.md)
