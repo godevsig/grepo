@@ -2,7 +2,6 @@ package shell
 
 import (
 	"io"
-	"os"
 	"os/exec"
 	"strings"
 )
@@ -22,25 +21,23 @@ func New(sh string) Shell {
 // The command will be running in background and its output is discarded
 // if it ends with &.
 func (s Shell) Run(cmd string) string {
-	fields := strings.Fields(cmd)
-	if len(fields) == 0 {
+	cmd = strings.TrimSpace(cmd)
+	if cmd == "" {
 		return ""
 	}
 	bg := false
-	if fields[len(fields)-1] == "&" {
+	if cmd[len(cmd)-1] == '&' {
 		bg = true
-		fields = fields[:len(fields)-1]
+		cmd = cmd[:len(cmd)-1]
 	}
-	if _, err := os.Stat(fields[0]); os.IsNotExist(err) {
-		fields = append([]string{"-c"}, strings.Join(fields, " "))
-	}
+
 	if bg {
-		if err := exec.Command(s.sh, fields...).Start(); err != nil {
+		if err := exec.Command("sh", "-c", cmd).Start(); err != nil {
 			return err.Error()
 		}
 		return ""
 	}
-	output, _ := exec.Command(s.sh, fields...).CombinedOutput()
+	output, _ := exec.Command("sh", "-c", cmd).CombinedOutput()
 	return string(output)
 }
 
