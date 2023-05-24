@@ -171,8 +171,9 @@ func showPidInfo(sf *showFlag, w io.Writer, pi *pidinfo.PidInfo, level int, pref
 }
 
 func getSysInfo() topid.SysInfo {
-	ncpu := shell.Run("nproc")
-	cpuinfo := shell.Run("cat /proc/cpuinfo")
+	ncpu, _ := shell.Run("nproc")
+	cpuinfo, _ := shell.Run("cat /proc/cpuinfo")
+	uname, _ := shell.Run("uname -a")
 
 	index := strings.Index(cpuinfo, "\n\n")
 	cpuinfo = cpuinfo[:index+1]
@@ -183,7 +184,7 @@ func getSysInfo() topid.SysInfo {
 
 	return topid.SysInfo{
 		CPUInfo:    cpuinfo,
-		KernelInfo: shell.Run("uname -a"),
+		KernelInfo: uname,
 	}
 }
 
@@ -241,7 +242,8 @@ func Start(args []string) (err error) {
 		var extrainfo string
 		for _, cmd := range infoCmds {
 			if len(cmd) != 0 {
-				extrainfo += fmt.Sprintf("######Command######\n$ %s\n%s\n", cmd, shell.Run(cmd))
+				out, _ := shell.Run(cmd)
+				extrainfo += fmt.Sprintf("######Command######\n$ %s\n%s\n", cmd, out)
 			}
 		}
 

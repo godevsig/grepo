@@ -3,10 +3,14 @@ package shell
 import "fmt"
 
 func ExampleRun() {
-	fmt.Print(Run("echo abc"))
-	fmt.Print(Run("echo github.com/godevsig/grepo/lib-sys/shell | tr / _"))
-	fmt.Print(Run("echo starting; echo blocking; sleep 3"))
-	fmt.Print(Run("echo non-blocking but no output; sleep 3 &"))
+	out, _ := Run("echo abc")
+	fmt.Print(out)
+	out, _ = Run("echo github.com/godevsig/grepo/lib-sys/shell | tr / _")
+	fmt.Print(out)
+	out, _ = Run("echo starting; echo blocking; sleep 3")
+	fmt.Print(out)
+	out, _ = Run("echo non-blocking but no output; sleep 3 &")
+	fmt.Print(out)
 
 	//Output:
 	//abc

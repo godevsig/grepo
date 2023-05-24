@@ -20,10 +20,10 @@ func New(sh string) Shell {
 // Run runs a file or a command and returns its output.
 // The command will be running in background and its output is discarded
 // if it ends with &.
-func (s Shell) Run(cmd string) string {
+func (s Shell) Run(cmd string) (string, error) {
 	cmd = strings.TrimSpace(cmd)
 	if cmd == "" {
-		return ""
+		return "", nil
 	}
 	bg := false
 	if cmd[len(cmd)-1] == '&' {
@@ -32,13 +32,10 @@ func (s Shell) Run(cmd string) string {
 	}
 
 	if bg {
-		if err := exec.Command("sh", "-c", cmd).Start(); err != nil {
-			return err.Error()
-		}
-		return ""
+		return "", exec.Command("sh", "-c", cmd).Start()
 	}
-	output, _ := exec.Command("sh", "-c", cmd).CombinedOutput()
-	return string(output)
+	output, err := exec.Command("sh", "-c", cmd).CombinedOutput()
+	return string(output), err
 }
 
 // RunWith reads and executes whatever from in and outputs to out.
@@ -57,7 +54,7 @@ func (s Shell) RunWith(in io.Reader, out io.Writer) error {
 }
 
 // Run is shortcut for New("sh").Run(cmd)
-func Run(cmd string) string {
+func Run(cmd string) (string, error) {
 	return New("sh").Run(cmd)
 }
 
