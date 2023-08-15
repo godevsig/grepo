@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/godevsig/grepo/lib/sys/shell"
+	"github.com/godevsig/glib/sys/shell"
 )
 
 // Start starts the app

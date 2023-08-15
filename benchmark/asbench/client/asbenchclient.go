@@ -9,7 +9,7 @@ import (
 
 	as "github.com/godevsig/adaptiveservice"
 	"github.com/godevsig/grepo/benchmark/asbench"
-	"github.com/godevsig/grepo/lib/sys/log"
+	"github.com/godevsig/glib/sys/log"
 )
 
 var content []byte

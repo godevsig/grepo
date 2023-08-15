@@ -23,7 +23,7 @@ import (
 	"github.com/go-echarts/go-echarts/v2/templates"
 	"github.com/go-echarts/go-echarts/v2/types"
 	as "github.com/godevsig/adaptiveservice"
-	"github.com/godevsig/grepo/lib/sys/log"
+	"github.com/godevsig/glib/sys/log"
 	"github.com/godevsig/grepo/render/docit"
 	"github.com/gorilla/mux"
 )

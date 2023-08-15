@@ -7,7 +7,7 @@ import (
 	"os"
 
 	as "github.com/godevsig/adaptiveservice"
-	"github.com/godevsig/grepo/lib/sys/log"
+	"github.com/godevsig/glib/sys/log"
 	topid "github.com/godevsig/grepo/perf/topidchart"
 )
 

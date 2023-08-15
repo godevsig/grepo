@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/godevsig/grepo/example/echo"
-	"github.com/godevsig/grepo/lib/sys/log"
+	"github.com/godevsig/glib/sys/log"
 )
 
 var server *echo.Server

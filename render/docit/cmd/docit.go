@@ -8,7 +8,7 @@ import (
 
 	_ "embed" //embed: read file
 
-	"github.com/godevsig/grepo/lib/sys/log"
+	"github.com/godevsig/glib/sys/log"
 	"github.com/godevsig/grepo/render/docit"
 )
 

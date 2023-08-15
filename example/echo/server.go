@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 
 	as "github.com/godevsig/adaptiveservice"
-	"github.com/godevsig/grepo/lib/sys/log"
+	"github.com/godevsig/glib/sys/log"
 )
 
 // Server is echo server.
