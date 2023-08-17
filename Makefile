@@ -2,13 +2,10 @@ SHELL=bash
 
 PKG_LIST := $(shell go list ./...)
 
-all: format lint vet test
+all: format vet test msgcheck
 
 format: ## Check coding style
 	@DIFF=$$(gofmt -d .); echo -n "$$DIFF"; test -z "$$DIFF"
-
-lint: ## Lint the files
-	@golint -set_exit_status ${PKG_LIST}
 
 vet: ## Examine and report suspicious constructs
 	@go vet ${PKG_LIST}
