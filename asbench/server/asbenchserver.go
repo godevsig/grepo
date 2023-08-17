@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/godevsig/grepo/asbench"
 	"github.com/godevsig/glib/sys/log"
+	"github.com/godevsig/grepo/asbench"
 )
 
 var server *asbench.Server
