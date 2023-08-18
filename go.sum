@@ -3,8 +3,8 @@ github.com/barkimedes/go-deepcopy v0.0.0-20200817023428-a044a1957ca4/go.mod h1:h
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/godevsig/adaptiveservice v0.9.24-0.20230329141516-d104c403854d h1:UwGkWVTOPqvfGTzdch2Y7ZcjkkR5WbAoixlDJ7E6/Hg=
-github.com/godevsig/adaptiveservice v0.9.24-0.20230329141516-d104c403854d/go.mod h1:t/MOA1DVvomK8ltOny8pbb8k1ZBYub6GvnTOs/M6Qkk=
+github.com/godevsig/adaptiveservice v0.9.24 h1:3d7OXNtEeDsnSGF5L6zq3vpdzsUr03Xvi/k3L2wlFN0=
+github.com/godevsig/adaptiveservice v0.9.24/go.mod h1:t/MOA1DVvomK8ltOny8pbb8k1ZBYub6GvnTOs/M6Qkk=
 github.com/godevsig/glib v0.0.0-20230815095222-ea0790ec1ec1 h1:QPoICGWwoW5eztWa8HtMkTm4llDIkwPqvwnIU57oUHg=
 github.com/godevsig/glib v0.0.0-20230815095222-ea0790ec1ec1/go.mod h1:XEkZ/2t+9WsZYEGdnKtwKwr6b8oWHiqymPnSvCsaFRI=
 github.com/godevsig/go-echarts/v2 v2.0.0-20211101104447-e8e4a51bc4fd h1:NXoy9fdgrEi4dREtTBQMRl5naGeHpYldnqjh5rmZgJk=
