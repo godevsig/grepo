@@ -3,9 +3,9 @@ module github.com/godevsig/grepo
 go 1.18
 
 require (
-	github.com/go-echarts/go-echarts/v2 v2.0.0-20210921152819-048776e902c7
+	github.com/go-echarts/go-echarts/v2 v2.2.7
 	github.com/godevsig/adaptiveservice v0.9.25
-	github.com/godevsig/glib v0.1.1
+	github.com/godevsig/glib v0.1.2-0.20230826061212-649e5e40e117
 	github.com/gorilla/mux v1.8.0
 	github.com/niubaoshu/gotiny v0.0.3
 )
