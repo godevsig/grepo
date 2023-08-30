@@ -39,7 +39,7 @@ We need to download gshell and start `gshell daemon` first.
 # Download gshell binary
 mkdir -p gshell/bin
 cd gshell
-wget http://10.10.10.10:8088/gshell/release/latest/gshell.$(uname -a) -O bin/gshell
+wget http://10.10.10.10:8088/gshell/release/latest/gshell.$(uname -m) -O bin/gshell
 chmod +x bin/gshell
 
 # Run gshell daemon

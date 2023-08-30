@@ -59,9 +59,14 @@ func (mgr *statMgr) onDisconnect(netconn as.Netconn) {
 }
 
 func (mgr *statMgr) onNewStream(ctx as.Context) {
-	mgr.lg.Debugln("on new stream")
 	sessionName := fmt.Sprintf("yours echo.v1.0 from %d", atomic.AddInt32(&mgr.sessionNum, 1))
+	fmt.Println("on new stream", sessionName)
 	ctx.SetContext(&sessionInfo{sessionName, mgr})
+}
+
+func (mgr *statMgr) onStreamClose(ctx as.Context) {
+	si := ctx.GetContext().(*sessionInfo)
+	fmt.Printf("on stream %v close\n", si.sessionName)
 }
 
 // NewServer creates a new server instance.
@@ -75,6 +80,7 @@ func NewServer(lg *log.Logger) *Server {
 	if err := s.Publish(ServiceEcho,
 		echoKnownMsgs,
 		as.OnNewStreamFunc(mgr.onNewStream),
+		as.OnStreamCloseFunc(mgr.onStreamClose),
 		as.OnConnectFunc(mgr.onConnect),
 		as.OnDisconnectFunc(mgr.onDisconnect),
 	); err != nil {

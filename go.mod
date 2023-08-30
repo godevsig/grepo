@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/go-echarts/go-echarts/v2 v2.2.7
-	github.com/godevsig/adaptiveservice v0.9.25
-	github.com/godevsig/glib v0.1.2-0.20230826061212-649e5e40e117
+	github.com/godevsig/adaptiveservice v0.9.26-0.20230830014831-c95dfbc18882
+	github.com/godevsig/glib v0.1.2-0.20230830021401-ee447d68739c
 	github.com/gorilla/mux v1.8.0
 	github.com/niubaoshu/gotiny v0.0.3
 )
