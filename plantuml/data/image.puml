@@ -1,0 +1,32 @@
+@startuml
+!define RECTANGLE class
+
+participant "APIGateway" as APIGateway
+participant "Orchestrator" as Orchestrator
+participant "Render" as Render
+participant "DeviceModel" as DeviceModel
+participant "VoltMgmt" as VoltMgmt
+
+APIGateway -> Orchestrator : StartNewVolt Request\n(Shelf:Type, NT:Name,Slot, LT:Name,Slot, ONU:Type,Position,SN...)
+activate Orchestrator
+
+Orchestrator -> Render : Render Request\n(With Parameters)
+activate Render
+
+Render -> DeviceModel : Get Model of Specific NT/LT\n(Uplink/Downlink Nums, Port Type...)
+activate DeviceModel
+DeviceModel --> Render : Response\n(Model Info)
+
+deactivate DeviceModel
+
+Render --> Orchestrator : Response\n(values.yaml)
+deactivate Render
+
+Orchestrator -> VoltMgmt : StartNewVolt Request\n(With values.yaml)
+activate VoltMgmt
+VoltMgmt --> Orchestrator : Response\n(Volt ID, Status or Failure Reason)
+deactivate VoltMgmt
+
+Orchestrator --> APIGateway : Final Response\n(Volt ID, Status or Failure Reason)
+deactivate Orchestrator
+@enduml

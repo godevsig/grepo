@@ -1,0 +1,49 @@
+basePath: /
+definitions:
+  github_com_godevsig_grepo_plantuml.PlantRequest:
+    properties:
+      data:
+        type: string
+      tag:
+        type: string
+    type: object
+  github_com_godevsig_grepo_plantuml.PlantResponse:
+    properties:
+      url:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: This is a sample server for PlantUML.
+  title: PlantUML Server API
+  version: "1.0"
+paths:
+  /create:
+    post:
+      consumes:
+      - application/json
+      description: Create UML diagram from PlantUML data.
+      parameters:
+      - description: UML Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_godevsig_grepo_plantuml.PlantRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_godevsig_grepo_plantuml.PlantResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create UML diagram
+swagger: "2.0"
