@@ -115,14 +115,14 @@ func (fs *FileServer) fileIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fileInfo, err := file.Readdir(-1)
+	dirEntries, err := file.Readdir(-1)
 	if err != nil {
 		http.Error(w, "Error reading directory", http.StatusInternalServerError)
 		return
 	}
 
 	var fileTypes []string
-	for _, f := range fileInfo {
+	for _, f := range dirEntries {
 		if f.IsDir() {
 			fileTypes = append(fileTypes, "Directory")
 		} else {
@@ -136,7 +136,7 @@ func (fs *FileServer) fileIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fa := attributes{
-		Flist:       fileInfo,
+		Flist:       dirEntries,
 		Ftype:       fileTypes,
 		Title:       fs.title,
 		CurrentPath: strings.TrimSuffix(currentPath, "/"),
