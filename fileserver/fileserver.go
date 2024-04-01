@@ -19,8 +19,8 @@ import (
 type attributes struct {
 	Flist []os.FileInfo
 	Ftype []string
-	Ftag  string
 	Title string
+	CurrentPath string
 }
 
 // FileServer represents data server
@@ -55,7 +55,7 @@ const pageTpl = `
 					<tbody>{{range $i, $file := .Flist}} {{$type := index $.Ftype $i}}
 						<tr>
 							<td>
-								<a href="{{$.Ftag}}/{{$file.Name}}">{{$file.Name}}</a></td>
+								<a href="{{$.CurrentPath}}/{{$file.Name}}">{{$file.Name}}</a></td>
 							<td>{{$file.Size}}</td>
 							<td>{{$type}}</td>
 							<td>{{$file.ModTime}}</td></tr>{{end}}</tbody>
@@ -87,10 +87,7 @@ func NewFileServer(lg *log.Logger, port, dir, title string) *FileServer {
 	}
 
 	router := mux.NewRouter().StrictSlash(false)
-	handler := http.FileServer(http.Dir(fs.dir))
-	router.HandleFunc("/", fs.fileIndex)
-	router.HandleFunc("/{tag}", fs.fileIndex)
-	router.PathPrefix("/").Handler(http.StripPrefix("/", handler))
+	router.PathPrefix("/").HandlerFunc(fs.fileIndex)
 
 	fs.srv = &http.Server{
 		Addr:    ":" + port,
@@ -100,38 +97,57 @@ func NewFileServer(lg *log.Logger, port, dir, title string) *FileServer {
 }
 
 func (fs *FileServer) fileIndex(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	tag := params["tag"]
+    fullPath := filepath.Join(fs.dir, r.URL.Path)
+    file, err := os.Open(fullPath)
+    if err != nil {
+        http.Error(w, "File not found", http.StatusNotFound)
+        return
+    }
+    defer file.Close()
 
-	if tag != "" && (strings.Index(tag, ".") != -1) || tag == "README" {
-		file, err := os.Open(fs.dir + "/" + tag)
-		defer file.Close()
-		if err != nil {
-			http.Error(w, "File not found.", 404)
-			return
-		}
-		io.Copy(w, file)
-		return
-	}
+    fileInfo, err := file.Stat()
+    if err != nil {
+        http.Error(w, "Error reading file", http.StatusInternalServerError)
+        return
+    }
 
-	tmpl := template.Must(template.New("").Parse(pageTpl))
-	files, err := ioutil.ReadDir(fs.dir + "/" + tag)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
-		return
-	}
-	var fileType []string
-	for _, file := range files {
-		ext := filepath.Ext(file.Name())
-		if ext == "" {
-			fileType = append(fileType, "dir")
-		} else {
-			fileType = append(fileType, ext)
-		}
-	}
-	fa := attributes{Flist: files, Ftype: fileType, Ftag: tag, Title: fs.title}
-	tmpl.Execute(w, fa)
+    if !fileInfo.IsDir() {
+        io.Copy(w, file)
+        return
+    }
+
+    files, err := ioutil.ReadDir(fullPath)
+    if err != nil {
+        http.Error(w, "Error reading directory", http.StatusInternalServerError)
+        return
+    }
+
+    var fileTypes []string
+    for _, f := range files {
+        if f.IsDir() {
+            fileTypes = append(fileTypes, "Directory")
+        } else {
+            fileTypes = append(fileTypes, "File")
+        }
+    }
+
+    currentPath := strings.Trim(r.URL.Path, "/")
+    if currentPath != "" {
+        currentPath = "/" + currentPath
+    }
+
+    fa := attributes{
+        Flist:      files,
+        Ftype:      fileTypes,
+        Title:      fs.title,
+        CurrentPath: currentPath,
+    }
+
+    tmpl := template.Must(template.New("").Parse(pageTpl))
+    err = tmpl.Execute(w, fa)
+    if err != nil {
+        http.Error(w, "Error rendering template", http.StatusInternalServerError)
+    }
 }
 
 func (fs *FileServer) fileUpload(w http.ResponseWriter, r *http.Request) {
