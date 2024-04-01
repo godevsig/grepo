@@ -17,9 +17,9 @@ import (
 )
 
 type attributes struct {
-	Flist []os.FileInfo
-	Ftype []string
-	Title string
+	Flist       []os.FileInfo
+	Ftype       []string
+	Title       string
 	CurrentPath string
 }
 
@@ -97,57 +97,57 @@ func NewFileServer(lg *log.Logger, port, dir, title string) *FileServer {
 }
 
 func (fs *FileServer) fileIndex(w http.ResponseWriter, r *http.Request) {
-    fullPath := filepath.Join(fs.dir, r.URL.Path)
-    file, err := os.Open(fullPath)
-    if err != nil {
-        http.Error(w, "File not found", http.StatusNotFound)
-        return
-    }
-    defer file.Close()
+	fullPath := filepath.Join(fs.dir, r.URL.Path)
+	file, err := os.Open(fullPath)
+	if err != nil {
+		http.Error(w, "File not found", http.StatusNotFound)
+		return
+	}
+	defer file.Close()
 
-    fileInfo, err := file.Stat()
-    if err != nil {
-        http.Error(w, "Error reading file", http.StatusInternalServerError)
-        return
-    }
+	fileInfo, err := file.Stat()
+	if err != nil {
+		http.Error(w, "Error reading file", http.StatusInternalServerError)
+		return
+	}
 
-    if !fileInfo.IsDir() {
-        io.Copy(w, file)
-        return
-    }
+	if !fileInfo.IsDir() {
+		io.Copy(w, file)
+		return
+	}
 
-    files, err := ioutil.ReadDir(fullPath)
-    if err != nil {
-        http.Error(w, "Error reading directory", http.StatusInternalServerError)
-        return
-    }
+	files, err := ioutil.ReadDir(fullPath)
+	if err != nil {
+		http.Error(w, "Error reading directory", http.StatusInternalServerError)
+		return
+	}
 
-    var fileTypes []string
-    for _, f := range files {
-        if f.IsDir() {
-            fileTypes = append(fileTypes, "Directory")
-        } else {
-            fileTypes = append(fileTypes, "File")
-        }
-    }
+	var fileTypes []string
+	for _, f := range files {
+		if f.IsDir() {
+			fileTypes = append(fileTypes, "Directory")
+		} else {
+			fileTypes = append(fileTypes, "File")
+		}
+	}
 
-    currentPath := strings.Trim(r.URL.Path, "/")
-    if currentPath != "" {
-        currentPath = "/" + currentPath
-    }
+	currentPath := strings.Trim(r.URL.Path, "/")
+	if currentPath != "" {
+		currentPath = "/" + currentPath
+	}
 
-    fa := attributes{
-        Flist:      files,
-        Ftype:      fileTypes,
-        Title:      fs.title,
-        CurrentPath: currentPath,
-    }
+	fa := attributes{
+		Flist:       files,
+		Ftype:       fileTypes,
+		Title:       fs.title,
+		CurrentPath: currentPath,
+	}
 
-    tmpl := template.Must(template.New("").Parse(pageTpl))
-    err = tmpl.Execute(w, fa)
-    if err != nil {
-        http.Error(w, "Error rendering template", http.StatusInternalServerError)
-    }
+	tmpl := template.Must(template.New("").Parse(pageTpl))
+	err = tmpl.Execute(w, fa)
+	if err != nil {
+		http.Error(w, "Error rendering template", http.StatusInternalServerError)
+	}
 }
 
 func (fs *FileServer) fileUpload(w http.ResponseWriter, r *http.Request) {
