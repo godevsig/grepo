@@ -3,7 +3,6 @@ package fileserver
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -116,14 +115,14 @@ func (fs *FileServer) fileIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	files, err := ioutil.ReadDir(fullPath)
+	fileInfo, err := file.Readdir(-1)
 	if err != nil {
 		http.Error(w, "Error reading directory", http.StatusInternalServerError)
 		return
 	}
 
 	var fileTypes []string
-	for _, f := range files {
+	for _, f := range fileInfo {
 		if f.IsDir() {
 			fileTypes = append(fileTypes, "Directory")
 		} else {
@@ -131,21 +130,20 @@ func (fs *FileServer) fileIndex(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	currentPath := strings.Trim(r.URL.Path, "/")
-	if currentPath != "" {
+	currentPath := r.URL.Path
+	if !strings.HasPrefix(currentPath, "/") {
 		currentPath = "/" + currentPath
 	}
 
 	fa := attributes{
-		Flist:       files,
+		Flist:       fileInfo,
 		Ftype:       fileTypes,
 		Title:       fs.title,
-		CurrentPath: currentPath,
+		CurrentPath: strings.TrimSuffix(currentPath, "/"),
 	}
 
 	tmpl := template.Must(template.New("").Parse(pageTpl))
-	err = tmpl.Execute(w, fa)
-	if err != nil {
+	if err := tmpl.Execute(w, fa); err != nil {
 		http.Error(w, "Error rendering template", http.StatusInternalServerError)
 	}
 }
