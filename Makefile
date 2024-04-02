@@ -1,6 +1,7 @@
 SHELL=bash
 
 PKG_LIST := $(shell go list ./...)
+MAIN_LIST := $(shell go list -f '{{if .Name}}{{if eq .Name "main"}}{{.ImportPath}}{{end}}{{end}}' ./...)
 
 all: format vet test msgcheck
 
@@ -9,6 +10,11 @@ format: ## Check coding style
 
 vet: ## Examine and report suspicious constructs
 	@go vet ${PKG_LIST}
+
+build: ## Build all main packages
+	@mkdir -p mainbin
+	@for main in ${MAIN_LIST}; do go build -o mainbin $${main}; done
+	@rm -rf mainbin
 
 test: ## Run unit tests
 	@go test ${PKG_LIST}
