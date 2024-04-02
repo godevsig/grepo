@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/godevsig/glib/sys/log"
 	"github.com/godevsig/grepo/fileserver"
@@ -18,8 +19,8 @@ func Start(args []string) (err error) {
 	flags.SetOutput(os.Stdout)
 
 	logLevel := flags.String("logLevel", "info", "debug/info/warn/error")
-	dir := flags.String("dir", "", "absolute directory path to be served")
-	port := flags.String("port", "0", "set server port, default 0 means alloced by net Listener")
+	dir := flags.String("dir", ".", "the directory path to be served")
+	port := flags.String("port", "0", "server port")
 	title := flags.String("title", "file server", "title of file server")
 	if err = flags.Parse(args); err != nil {
 		if err == flag.ErrHelp {
@@ -28,20 +29,21 @@ func Start(args []string) (err error) {
 		return err
 	}
 
-	if len(*dir) == 0 {
-		return fmt.Errorf("no dir specified")
+	path := *dir
+	if path, err = filepath.Abs(path); err != nil {
+		return err
 	}
 
 	stream := log.NewStream("")
 	stream.SetOutputter(os.Stdout)
 	lg := stream.NewLogger("fileserver", log.StringToLoglevel(*logLevel))
 
-	fs = fileserver.NewFileServer(lg, *port, *dir, *title)
+	fs = fileserver.NewFileServer(lg, *port, path, *title)
 	if fs == nil {
 		return errors.New("create file server failed")
 	}
 
-	fmt.Printf("file server for %s @ :%s\n", *dir, fs.Port)
+	fmt.Printf("file server for %s @ :%s\n", path, fs.Port)
 
 	return fs.Start()
 }
