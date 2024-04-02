@@ -30,6 +30,7 @@ type FileServer struct {
 	lg       *log.Logger
 	srv      *http.Server
 	listener net.Listener
+	template *template.Template
 }
 
 const pageTpl = `
@@ -77,12 +78,15 @@ func NewFileServer(lg *log.Logger, port, dir, title string) *FileServer {
 		port = strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)
 	}
 
+	tmpl := template.Must(template.New("").Parse(pageTpl))
+
 	fs := &FileServer{
 		Port:     port,
 		dir:      dir,
 		lg:       lg,
 		title:    title,
 		listener: listener,
+		template: tmpl,
 	}
 
 	router := mux.NewRouter().StrictSlash(false)
@@ -142,8 +146,7 @@ func (fs *FileServer) fileIndex(w http.ResponseWriter, r *http.Request) {
 		CurrentPath: strings.TrimSuffix(currentPath, "/"),
 	}
 
-	tmpl := template.Must(template.New("").Parse(pageTpl))
-	if err := tmpl.Execute(w, fa); err != nil {
+	if err := fs.template.Execute(w, fa); err != nil {
 		http.Error(w, "Error rendering template", http.StatusInternalServerError)
 	}
 }
