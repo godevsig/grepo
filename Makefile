@@ -2,7 +2,7 @@ SHELL=bash
 
 PKG_LIST := $(shell go list -f '{{.Dir}}' ./...)
 
-all: format vet test msgcheck
+all: format vet build test msgcheck
 
 format: ## Check coding style
 	@DIFF=$$(gofmt -d .); echo -n "$$DIFF"; test -z "$$DIFF"
