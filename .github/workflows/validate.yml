@@ -28,5 +28,8 @@ jobs:
     - name: Vet code
       run: make vet
 
+    - name: Build packages
+      run: make build
+
     - name: Test
       run: make test
