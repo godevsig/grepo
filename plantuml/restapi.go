@@ -10,9 +10,9 @@ import (
 	"path"
 	"time"
 
-	"github.com/gorilla/mux"
-	"github.com/swaggo/http-swagger"
 	_ "github.com/godevsig/grepo/plantuml/docs"
+	"github.com/gorilla/mux"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 // RestAPIServer is the REST API server
